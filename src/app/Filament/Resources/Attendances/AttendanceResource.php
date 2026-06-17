@@ -1,0 +1,48 @@
+<?php
+
+namespace App\Filament\Resources\Attendances;
+
+use App\Filament\Resources\Attendances\Pages\ListAttendances;
+use App\Filament\Resources\Attendances\Tables\AttendancesTable;
+use App\Models\Attendance;
+use BackedEnum;
+use Filament\Resources\Resource;
+use Filament\Support\Icons\Heroicon;
+use Filament\Tables\Table;
+
+class AttendanceResource extends Resource
+{
+    protected static ?string $model = Attendance::class;
+
+    protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedClipboardDocumentCheck;
+
+    protected static ?string $recordTitleAttribute = 'full_name';
+
+    protected static ?string $navigationLabel = 'Asistencias';
+
+    protected static ?string $pluralModelLabel = 'Asistencias';
+
+    protected static ?string $modelLabel = 'Asistencia';
+
+    public static function table(Table $table): Table
+    {
+        return AttendancesTable::configure($table);
+    }
+
+    public static function getRelations(): array
+    {
+        return [];
+    }
+
+    public static function getPages(): array
+    {
+        return [
+            'index' => ListAttendances::route('/'),
+        ];
+    }
+
+    public static function canCreate(): bool
+    {
+        return false;
+    }
+}

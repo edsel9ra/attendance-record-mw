@@ -1,0 +1,406 @@
+@import '../../../../vendor/filament/filament/resources/css/theme.css';
+
+@source '../../../../app/Filament/**/*.php';
+@source '../../../../resources/views/filament/**/*.php';
+
+@theme {
+    --color-navy-900: #0a1628;
+    --color-navy-800: #0f1f36;
+    --color-navy-700: #132b4a;
+    --color-navy-600: #1a3d63;
+    --color-navy-500: #25507d;
+    --color-navy-400: #3a6a9a;
+
+    --color-red-400: #f87171;
+    --color-red-500: #ef4444;
+    --color-red-600: #dc2626;
+    --color-red-700: #b91c1c;
+
+    --color-warm-50: #fdfcfa;
+    --color-warm-100: #f7f4ee;
+    --color-warm-200: #ede6db;
+    --color-warm-300: #ddd2c2;
+    --color-warm-400: #c9baa4;
+    --color-warm-500: #b09d83;
+    --color-warm-600: #8c7a64;
+}
+
+/* ── Login page ── */
+.fi-simple-layout {
+    background:
+        radial-gradient(ellipse at 20% 0%, rgba(15,31,54,0.08) 0%, transparent 60%),
+        radial-gradient(ellipse at 80% 100%, rgba(239,68,68,0.06) 0%, transparent 50%),
+        repeating-linear-gradient(45deg, transparent, transparent 40px, rgba(0,0,0,0.015) 40px, rgba(0,0,0,0.015) 41px),
+        #f7f4ee;
+    transition: background 0.5s ease;
+}
+
+.fi-simple-main > .fi-card,
+.fi-simple-main > form > .fi-card {
+    box-shadow: 0 10px 40px rgba(10, 22, 40, 0.06);
+    border-color: #ede6db;
+    transition: box-shadow 0.3s ease, border-color 0.3s ease;
+}
+
+.fi-simple-main > .fi-card:hover,
+.fi-simple-main > form > .fi-card:hover {
+    box-shadow: 0 14px 50px rgba(10, 22, 40, 0.1);
+}
+
+.fi-simple-header-heading {
+    font-family: 'DM Serif Display', serif;
+    color: #0f1f36;
+}
+
+.fi-simple-header-subheading {
+    color: #8c7a64;
+}
+
+/* ── Sidebar ── */
+.fi-sidebar {
+    background-color: #0f1f36 !important;
+    border-inline-end: 1px solid rgba(255,255,255,0.04);
+    transition: background-color 0.3s ease;
+}
+
+.fi-sidebar-header {
+    background-color: #0a1628 !important;
+    border-bottom: 1px solid rgba(255,255,255,0.05);
+}
+
+.fi-sidebar-header .fi-logo {
+    color: #ffffff;
+}
+
+.fi-sidebar-item.fi-active > .fi-sidebar-item-btn {
+    background-color: rgba(239, 68, 68, 0.12) !important;
+    position: relative;
+}
+
+.fi-sidebar-item.fi-active > .fi-sidebar-item-btn::before {
+    content: '';
+    position: absolute;
+    inset-inline-start: 0;
+    top: 50%;
+    translate: 0 -50%;
+    width: 3px;
+    height: 60%;
+    border-radius: 0 3px 3px 0;
+    background-color: #ef4444;
+    box-shadow: 0 0 8px rgba(239, 68, 68, 0.4);
+}
+
+.fi-sidebar-item.fi-active > .fi-sidebar-item-btn .fi-sidebar-item-label {
+    color: #ef4444 !important;
+}
+
+.fi-sidebar-item.fi-active > .fi-sidebar-item-btn > .fi-icon {
+    color: #ef4444 !important;
+}
+
+.fi-sidebar-item.fi-sidebar-item-has-url > .fi-sidebar-item-btn {
+    color: rgba(255, 255, 255, 0.65) !important;
+    transition: all 0.2s ease;
+}
+
+.fi-sidebar-item.fi-sidebar-item-has-url > .fi-sidebar-item-btn:hover {
+    background-color: rgba(255, 255, 255, 0.06) !important;
+    color: rgba(255, 255, 255, 0.9) !important;
+    padding-left: 2px;
+}
+
+.fi-sidebar-item-label {
+    color: rgba(255, 255, 255, 0.75) !important;
+    transition: color 0.2s ease;
+}
+
+.fi-sidebar-item-btn > .fi-icon {
+    color: rgba(255, 255, 255, 0.5) !important;
+    transition: color 0.2s ease, transform 0.2s ease;
+}
+
+.fi-sidebar-item.fi-sidebar-item-has-url > .fi-sidebar-item-btn:hover > .fi-icon {
+    transform: translateX(2px);
+}
+
+.fi-sidebar-item-grouped-border-part {
+    background-color: rgba(255, 255, 255, 0.25) !important;
+}
+
+.fi-sidebar-item-grouped-border-part-not-first,
+.fi-sidebar-item-grouped-border-part-not-last {
+    background-color: rgba(255, 255, 255, 0.12) !important;
+}
+
+.fi-sidebar-item-badge {
+    background-color: #ef4444 !important;
+    color: #ffffff !important;
+    box-shadow: 0 2px 6px rgba(239, 68, 68, 0.3);
+}
+
+.fi-sidebar-footer {
+    border-top: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.fi-sidebar .fi-user-menu-trigger {
+    color: rgba(255, 255, 255, 0.75) !important;
+    transition: all 0.2s ease;
+}
+
+.fi-sidebar .fi-user-menu-trigger:hover {
+    background-color: rgba(255, 255, 255, 0.06) !important;
+    padding-left: 4px;
+}
+
+.fi-sidebar .fi-user-menu-trigger .fi-tenant-menu-trigger-text {
+    color: rgba(255, 255, 255, 0.9) !important;
+}
+
+.fi-sidebar .fi-theme-switcher-btn {
+    color: rgba(255, 255, 255, 0.5) !important;
+    transition: all 0.2s ease;
+}
+
+.fi-sidebar .fi-theme-switcher-btn:hover {
+    background-color: rgba(255, 255, 255, 0.08) !important;
+    color: rgba(255, 255, 255, 0.85) !important;
+    transform: scale(1.05);
+}
+
+.fi-sidebar-nav-group-label {
+    color: rgba(255, 255, 255, 0.35) !important;
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    font-weight: 500;
+}
+
+/* ── Topbar ── */
+.fi-topbar {
+    background-color: #fdfcfa !important;
+    border-bottom: 1px solid #ede6db;
+    box-shadow: 0 1px 3px rgba(15, 31, 54, 0.04) !important;
+    transition: box-shadow 0.3s ease;
+}
+
+.fi-topbar-item.fi-active .fi-topbar-item-btn {
+    background-color: rgba(239, 68, 68, 0.1) !important;
+}
+
+.fi-topbar-item.fi-active .fi-topbar-item-label {
+    color: #dc2626 !important;
+}
+
+/* ── Sidebar overlay ── */
+.fi-sidebar-close-overlay {
+    background-color: rgba(10, 22, 40, 0.5) !important;
+    transition: opacity 0.3s ease;
+}
+
+/* ── Buttons ── */
+.fi-btn:not(.fi-btn-outlined):not(.fi-btn-ghost) {
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+    transition: all 0.25s ease;
+}
+
+.fi-btn.fi-btn-color-primary:not(.fi-btn-outlined):not(.fi-btn-ghost) {
+    background-image: linear-gradient(135deg, #dc2626, #b91c1c) !important;
+    color: white !important;
+    border: none !important;
+    box-shadow: 0 4px 14px rgba(220, 38, 38, 0.25);
+}
+
+.fi-btn.fi-btn-color-primary:not(.fi-btn-outlined):not(.fi-btn-ghost):hover {
+    background-image: linear-gradient(135deg, #ef4444, #dc2626) !important;
+    box-shadow: 0 6px 24px rgba(220, 38, 38, 0.35);
+    transform: translateY(-1px);
+}
+
+.fi-btn.fi-btn-color-primary:not(.fi-btn-outlined):not(.fi-btn-ghost):active {
+    transform: translateY(0) scale(0.98);
+}
+
+.fi-btn.fi-btn-color-primary.fi-btn-outlined {
+    border-color: #ef4444 !important;
+    color: #dc2626 !important;
+    transition: all 0.2s ease;
+}
+
+.fi-btn.fi-btn-color-primary.fi-btn-outlined:hover {
+    background-color: rgba(239, 68, 68, 0.08) !important;
+    border-color: #dc2626 !important;
+}
+
+/* ── Inputs ── */
+.fi-input-wrp {
+    border-radius: 0.75rem !important;
+    border-color: #ddd2c2 !important;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.03);
+    transition: border-color 0.25s ease, box-shadow 0.25s ease, transform 0.15s ease;
+}
+
+.fi-input-wrp:focus-within {
+    border-color: #ef4444 !important;
+    box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.15), 0 1px 4px rgba(239, 68, 68, 0.1) !important;
+    transform: translateY(-1px);
+}
+
+.fi-input-wrp:hover {
+    border-color: #c9baa4 !important;
+}
+
+.fi-input {
+    font-size: 0.875rem;
+}
+
+/* ── Cards ── */
+.fi-card {
+    border-radius: 1rem !important;
+    border-color: #ede6db !important;
+    box-shadow: 0 1px 3px rgba(15, 31, 54, 0.04);
+    transition: box-shadow 0.3s ease, border-color 0.3s ease;
+}
+
+.fi-card:hover {
+    box-shadow: 0 4px 12px rgba(15, 31, 54, 0.08);
+}
+
+/* ── Tables ── */
+.fi-ta-ctn {
+    border-radius: 1rem !important;
+    border-color: #ede6db !important;
+    box-shadow: 0 1px 3px rgba(15, 31, 54, 0.04);
+    transition: box-shadow 0.3s ease;
+}
+
+.fi-ta-header-ctn {
+    border-bottom-color: #ede6db !important;
+}
+
+.fi-ta-header {
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    font-weight: 500;
+    color: #b09d83;
+}
+
+.fi-ta-row {
+    transition: background-color 0.15s ease;
+}
+
+.fi-ta-row:hover {
+    background-color: rgba(239, 68, 68, 0.03) !important;
+}
+
+/* ── Modals ── */
+.fi-modal-window {
+    border-radius: 1rem !important;
+    box-shadow: 0 20px 60px rgba(10, 22, 40, 0.12);
+    animation: modalIn 0.25s ease-out;
+}
+
+@keyframes modalIn {
+    from {
+        opacity: 0;
+        transform: scale(0.95) translateY(10px);
+    }
+    to {
+        opacity: 1;
+        transform: scale(1) translateY(0);
+    }
+}
+
+.fi-modal-header {
+    border-bottom-color: #ede6db !important;
+}
+
+/* ── Sections ── */
+.fi-section {
+    border-radius: 1rem !important;
+    border-color: #ede6db !important;
+    box-shadow: 0 1px 3px rgba(15, 31, 54, 0.04);
+    transition: box-shadow 0.3s ease;
+}
+
+.fi-section-header {
+    border-bottom-color: #ede6db !important;
+}
+
+/* ── Page headers ── */
+.fi-page-heading {
+    font-family: 'DM Serif Display', serif;
+}
+
+/* ── Tabs ── */
+.fi-tabs-item.fi-active .fi-tabs-item-label {
+    color: #dc2626 !important;
+}
+
+.fi-tabs-item.fi-active::after {
+    background-color: #ef4444 !important;
+}
+
+/* ── Pagination ── */
+.fi-pagination-item.fi-active {
+    background-color: #ef4444 !important;
+    color: #fff !important;
+    box-shadow: 0 2px 8px rgba(239, 68, 68, 0.3);
+}
+
+.fi-pagination-item:not(.fi-active) {
+    transition: all 0.2s ease;
+}
+
+.fi-pagination-item:not(.fi-active):hover {
+    background-color: rgba(239, 68, 68, 0.08) !important;
+    transform: translateY(-1px);
+}
+
+/* ── Breadcrumbs ── */
+.fi-breadcrumbs-item-separator {
+    color: #c9baa4 !important;
+}
+
+/* ── Dropdown ── */
+.fi-dropdown-panel {
+    border-color: #ede6db !important;
+    border-radius: 0.75rem !important;
+    box-shadow: 0 10px 40px rgba(10, 22, 40, 0.08);
+    animation: dropdownIn 0.15s ease-out;
+}
+
+@keyframes dropdownIn {
+    from {
+        opacity: 0;
+        transform: translateY(-4px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* ── Notification badge ── */
+.fi-badge {
+    transition: all 0.2s ease;
+}
+
+/* ── Global scrollbar styling ── */
+::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+}
+
+::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+    background: rgba(15, 31, 54, 0.15);
+    border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: rgba(15, 31, 54, 0.25);
+}

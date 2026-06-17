@@ -1,0 +1,27 @@
+# Agent / IDE
+/.agents
+/.idea
+/.vscode
+/.cursor
+/.nova
+/.zed
+/.codex
+
+# OS files
+.DS_Store
+Thumbs.db
+*.log
+
+# Docker
+.env
+.env.*
+!.env.example
+
+# Misc
+*.swp
+*.swo
+*~
+
+# Backup files
+*.bak
+*.backup
