@@ -18,12 +18,6 @@ services:
       DB_DATABASE: ${DB_DATABASE:-laravel}
       DB_USERNAME: ${DB_USERNAME:-laravel}
       DB_PASSWORD: ${DB_PASSWORD:-laravel}
-      ICG_HOST: ${ICG_HOST}
-      ICG_DBNAME: ${ICG_DBNAME:-MANAGER}
-      ICG_USER: ${ICG_USER}
-      ICG_PASS: ${ICG_PASS}
-      ICG_ENCRYPT: ${ICG_ENCRYPT:-Optional}
-      ICG_TRUST_CERT: ${ICG_TRUST_CERT:-Yes}
       APP_KEY: ${APP_KEY}
       QUEUE_CONNECTION: database
       CACHE_STORE: database
@@ -34,7 +28,7 @@ services:
   nginx:
     build:
       context: .
-      dockerfile: Dockerfile
+      dockerfile: Dockerfile.prod
       target: nginx
     container_name: laravel_nginx
     restart: unless-stopped
