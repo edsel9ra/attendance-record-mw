@@ -72,36 +72,36 @@ services:
     networks:
       - laravel
 
-  vite:
-    build:
-      context: ./docker/node
-    container_name: laravel_vite
-    restart: unless-stopped
-    working_dir: /var/www
-    volumes:
-      - ./src:/var/www
-      - node_modules:/var/www/node_modules
-      - pnpm_store:/pnpm/store
-    ports:
-      - "5173:5173"
-    environment:
-      CHOKIDAR_USEPOLLING: "true"
-      WATCHPACK_POLLING: "true"
-      VITE_HMR_HOST: "localhost"
-      PNPM_HOME: "/pnpm"
-      COREPACK_ENABLE_DOWNLOAD_PROMPT: "0"
-    command: >
-      sh -lc "
-      echo 'Iniciando Vite con pnpm...' &&
-      pnpm --version &&
-      pnpm config set store-dir /pnpm/store &&
-      pnpm install --force &&
-      pnpm run dev -- --host 0.0.0.0 --port 5173
-      "
-    tty: true
-    stdin_open: true
-    networks:
-      - laravel
+  #vite:
+  #  build:
+  #    context: ./docker/node
+  #  container_name: laravel_vite
+  #  restart: unless-stopped
+  #  working_dir: /var/www
+  #  volumes:
+  #    - ./src:/var/www
+  #    - node_modules:/var/www/node_modules
+  #    - pnpm_store:/pnpm/store
+  #  ports:
+  #    - "5173:5173"
+  #  environment:
+  #    CHOKIDAR_USEPOLLING: "true"
+  #    WATCHPACK_POLLING: "true"
+  #    VITE_HMR_HOST: "localhost"
+  #    PNPM_HOME: "/pnpm"
+  #    COREPACK_ENABLE_DOWNLOAD_PROMPT: "0"
+  #  command: >
+  #    sh -lc "
+  #    echo 'Iniciando Vite con pnpm...' &&
+  #    pnpm --version &&
+  #    pnpm config set store-dir /pnpm/store &&
+  #    pnpm install --force &&
+  #    pnpm run dev -- --host 0.0.0.0 --port 5173
+  #    "
+  #  tty: true
+  #  stdin_open: true
+  #  networks:
+  #    - laravel
 
 networks:
   laravel:

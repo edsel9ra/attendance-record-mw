@@ -14,6 +14,7 @@ class ReasonSeeder extends Seeder
             'REINDUCCIÓN',
             'CAPACITACIÓN',
             'DIVULGACIÓN DE INFORMACIÓN',
+            'COMITÉ PRIMARIO',
         ];
 
         foreach ($reasons as $name) {

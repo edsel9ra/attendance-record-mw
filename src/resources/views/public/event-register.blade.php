@@ -18,86 +18,124 @@
         <div class="w-full max-w-5xl animate-[fadeIn_0.6s_ease-out] opacity-0" style="animation-fill-mode: forwards;">
             <div class="bg-warm-50 rounded-2xl shadow-xl shadow-navy-900/5 border border-warm-200 overflow-hidden">
 
-                {{-- Encabezado formato institucional --}}
+                {{-- Encabezado formato institucional (mismo diseno que drawTopInstitutionalHeader) --}}
                 <div class="bg-white px-4 pt-4 sm:px-6">
-                    <img src="{{ asset('images/header-registro-asistencia.png') }}" alt="Formato Registro de Asistencia"
-                        class="w-full h-auto border border-black bg-white">
+                    <div class="w-full border border-black bg-white font-sans text-[9px] leading-tight"
+                         style="display:grid; grid-template-columns: 35fr 201fr 45fr;">
+
+                        {{-- Logo --}}
+                        <div class="border-r border-black flex items-center justify-center p-1.5 min-h-[60px]">
+                            <img src="{{ asset('images/logo_mw.png') }}" alt="Mister Wings"
+                                 onerror="this.onerror=null;this.parentElement.innerHTML='<span class=\'font-bold text-xs\'>Mister Wings</span>';"
+                                 class="max-h-12 w-auto">
+                        </div>
+
+                        {{-- Titulo central --}}
+                        <div class="border-r border-black flex flex-col min-h-[60px]">
+                            <div class="flex-1 flex items-center justify-center font-bold text-lg sm:text-xl tracking-wide"
+                                 style="font-family:Impact,'Arial Black',sans-serif;">
+                                FORMATO
+                            </div>
+                            <div class="border-t border-black flex-1 flex items-center justify-center font-bold text-lg sm:text-xl tracking-wide"
+                                 style="font-family:Impact,'Arial Black',sans-serif;">
+                                REGISTRO DE ASISTENCIA VIRTUAL
+                            </div>
+                        </div>
+
+                        {{-- Metadatos (Código, Versión, Fecha) --}}
+                        <div class="flex flex-col min-h-[60px]">
+                            <div class="flex-1 px-1.5 py-0.5 leading-tight flex flex-col justify-center">
+                                <div class="flex items-baseline gap-0.5">
+                                    <span class="font-bold text-[8.5px]">Código:</span>
+                                    <span class="text-[8.5px]">FO-SST-29</span>
+                                </div>
+                                <div class="flex items-baseline gap-0.5">
+                                    <span class="font-bold text-[8.5px]">Versión:</span>
+                                    <span class="text-[8.5px]">01</span>
+                                </div>
+                            </div>
+                            <div class="border-t border-black flex-1 px-1.5 py-0.5 leading-tight flex flex-col justify-center">
+                                <div class="font-bold text-[8.5px]">Fecha de edición:</div>
+                                <div class="text-[8.5px]">22-Jun-2026</div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
 
-                {{-- Tema del evento --}}
-                <div class="px-8 sm:px-10 py-5 bg-white border-b border-warm-200">
-                    <span class="text-warm-500 text-xs uppercase tracking-wider font-medium">Tema / Capacitación</span>
-                    <h1 class="mt-1 text-xl sm:text-2xl font-bold text-navy-800 leading-tight">{{ $event->topic }}</h1>
-                </div>
+                {{-- Informacion del evento (mismo diseno que drawEventMainInformation) --}}
+                @php
+                    $reason = $event->reason ?? '';
+                    $reasonNorm = str_replace(
+                        ['Á','É','Í','Ó','Ú','Ü','Ñ','á','é','í','ó','ú','ü','ñ'],
+                        ['A','E','I','O','U','U','N','A','E','I','O','U','U','N'],
+                        Str::upper($reason)
+                    );
+                    $isInduccion   = $reason !== '' && str_contains($reasonNorm, 'INDUCCION CORPORATIVA');
+                    $isReinduccion = $reason !== '' && str_contains($reasonNorm, 'REINDUCCION');
+                    $isCapacitacion = $reason !== '' && str_contains($reasonNorm, 'CAPACITACION');
+                    $isDivulgacion = $reason !== '' && str_contains($reasonNorm, 'DIVULGACION DE INFORMACION');
+                @endphp
+                <div class="bg-white px-4 pb-4 sm:px-6">
+                    <div class="w-full border-x border-b border-black bg-white font-sans text-black divide-y divide-black text-[9px]">
 
-                {{-- Event Details --}}
-                <div class="px-8 sm:px-10 pt-8 pb-4 border-b border-warm-200">
-                    <div class="grid grid-cols-2 gap-x-8 gap-y-4 text-sm">
-                        <div class="flex items-start gap-3">
-                            <svg class="w-4 h-4 text-red-500 mt-0.5 shrink-0" fill="none" stroke="currentColor"
-                                viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                    d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                            </svg>
-                            <div>
-                                <span class="text-warm-500 text-xs uppercase tracking-wider font-medium">Fecha</span>
-                                <p class="text-navy-800 font-medium">
-                                    {{ \Carbon\Carbon::parse($event->date)->format('d/m/Y') }}</p>
+                        {{-- Row 1: FECHA | TEMA | HORA INICIO | HORA FINAL --}}
+                        <div class="flex flex-col sm:flex-row">
+                            <div class="flex items-baseline px-2 py-1.5 sm:border-r sm:border-black sm:w-[14%]">
+                                <span class="font-bold shrink-0">FECHA:</span>
+                                <span class="ml-1 flex-1 min-w-[50px]">{{ \Carbon\Carbon::parse($event->date)->format('d/m/Y') }}</span>
+                            </div>
+                            <div class="flex items-baseline px-2 py-1.5 sm:border-r sm:border-black flex-1">
+                                <span class="font-bold shrink-0">TEMA:</span>
+                                <span class="ml-1 flex-1 min-w-[60px]">{{ $event->topic }}</span>
+                            </div>
+                            <div class="flex items-baseline px-2 py-1.5 sm:border-r sm:border-black sm:w-[18%]">
+                                <span class="font-bold shrink-0">HORA INICIO:</span>
+                                <span class="ml-1 flex-1 min-w-[40px]">{{ \Carbon\Carbon::parse($event->start_time)->format('H:i') }}</span>
+                            </div>
+                            <div class="flex items-baseline px-2 py-1.5 sm:w-[18%]">
+                                <span class="font-bold shrink-0">HORA FINAL:</span>
+                                <span class="ml-1 flex-1 min-w-[40px]">{{ \Carbon\Carbon::parse($event->end_time)->format('H:i') }}</span>
                             </div>
                         </div>
-                        <div class="flex items-start gap-3">
-                            <svg class="w-4 h-4 text-red-500 mt-0.5 shrink-0" fill="none" stroke="currentColor"
-                                viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                    d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                            </svg>
-                            <div>
-                                <span class="text-warm-500 text-xs uppercase tracking-wider font-medium">Horario</span>
-                                <p class="text-navy-800 font-medium">
-                                    {{ \Carbon\Carbon::parse($event->start_time)->format('H:i') }} —
-                                    {{ \Carbon\Carbon::parse($event->end_time)->format('H:i') }}</p>
+
+                        {{-- Row 2: DIRIGE | CARGO/ÁREA | LUGAR --}}
+                        <div class="flex flex-col sm:flex-row">
+                            <div class="flex items-baseline px-2 py-1.5 sm:border-r sm:border-black flex-1">
+                                <span class="font-bold shrink-0">DIRIGE:</span>
+                                <span class="ml-1 flex-1 min-w-[60px]">{{ $event->directedBy?->name ?? '' }}</span>
+                            </div>
+                            <div class="flex items-baseline px-2 py-1.5 sm:border-r sm:border-black flex-1">
+                                <span class="font-bold shrink-0">CARGO/ÁREA:</span>
+                                <span class="ml-1 flex-1 min-w-[50px]">{{ $event->directed_by_position ?? '' }}</span>
+                            </div>
+                            <div class="flex items-baseline px-2 py-1.5 flex-1">
+                                <span class="font-bold shrink-0">LUGAR:</span>
+                                <span class="ml-1 flex-1 min-w-[50px]">{{ $event->place ?? '' }}</span>
                             </div>
                         </div>
-                        <div class="flex items-start gap-3">
-                            <svg class="w-4 h-4 text-red-500 mt-0.5 shrink-0" fill="none" stroke="currentColor"
-                                viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                    d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                    d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
-                            </svg>
-                            <div>
-                                <span class="text-warm-500 text-xs uppercase tracking-wider font-medium">Lugar</span>
-                                <p class="text-navy-800 font-medium">{{ $event->place }}</p>
-                            </div>
+
+                        {{-- Row 3: MOTIVO DE LA REUNIÓN + opciones --}}
+                        <div class="flex flex-wrap items-baseline gap-x-0.5 gap-y-0.5 px-2 py-1.5">
+                            <span class="font-bold">MOTIVO DE LA REUNIÓN:</span>
+                            <span class="font-bold ml-1">INDUCCIÓN CORPORATIVA</span>
+                            <span class="min-w-[16px] text-center font-bold">{{ $isInduccion ? 'X' : '' }}</span>
+                            <span class="font-bold ml-1">REINDUCCIÓN</span>
+                            <span class="min-w-[16px] text-center font-bold">{{ $isReinduccion ? 'X' : '' }}</span>
+                            <span class="font-bold ml-1">CAPACITACIÓN</span>
+                            <span class="min-w-[16px] text-center font-bold">{{ $isCapacitacion ? 'X' : '' }}</span>
+                            <span class="font-bold ml-1">DIVULGACIÓN DE INFORMACIÓN</span>
+                            <span class="min-w-[16px] text-center font-bold flex-1">{{ $isDivulgacion ? 'X' : '' }}</span>
                         </div>
-                        <div class="flex items-start gap-3">
-                            <svg class="w-4 h-4 text-red-500 mt-0.5 shrink-0" fill="none" stroke="currentColor"
-                                viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                    d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                            </svg>
-                            <div>
-                                <span class="text-warm-500 text-xs uppercase tracking-wider font-medium">Dirige</span>
-                                <p class="text-navy-800 font-medium">{{ $event->directedBy->name }} —
-                                    {{ $event->directed_by_position }}</p>
-                            </div>
-                        </div>
-                        <div class="col-span-2 flex items-start gap-3">
-                            <svg class="w-4 h-4 text-red-500 mt-0.5 shrink-0" fill="none" stroke="currentColor"
-                                viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                    d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                            </svg>
-                            <div>
-                                <span class="text-warm-500 text-xs uppercase tracking-wider font-medium">Motivo</span>
-                                <p class="text-navy-800 font-medium">{{ $event->reason }}</p>
-                            </div>
+
+                        {{-- Row 4: OTRO --}}
+                        <div class="flex items-baseline px-2 py-1.5">
+                            <span class="font-bold shrink-0">OTRO:</span>
+                            <span class="ml-1 flex-1 min-w-[80px]">{{ $reason }}</span>
                         </div>
                     </div>
 
                     @if ($attachmentUrl && $isViewable)
-                        <div class="mt-4 pt-4 border-t border-warm-200">
+                        <div class="mt-2 pt-2 border-t border-warm-200">
                             <a href="{{ $attachmentUrl }}" target="_blank"
                                 class="inline-flex items-center gap-2 text-sm font-medium text-navy-600 hover:text-navy-800 transition-colors group">
                                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">

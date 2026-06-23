@@ -253,17 +253,17 @@ class ReportService
 
         $this->setImpactTitleFont($pdf, 19.8);
         $pdf->SetXY($titleX, $middleLineY + 2.2);
-        $pdf->Cell($titleW, 8.2, $this->pdfText('REGISTRO DE ASISTENCIA'), 0, 0, 'C');
+        $pdf->Cell($titleW, 8.2, $this->pdfText('REGISTRO DE ASISTENCIA VIRTUAL'), 0, 0, 'C');
 
-        $this->drawHeaderMetaLine($pdf, $metaX + 1.2, $y + 1.5, 'Código:', 'FO-GG-01');
-        $this->drawHeaderMetaLine($pdf, $metaX + 1.2, $y + 6.0, 'Versión:', '03');
+        $this->drawHeaderMetaLine($pdf, $metaX + 1.2, $y + 1.5, 'Código:', 'FO-SST-29');
+        $this->drawHeaderMetaLine($pdf, $metaX + 1.2, $y + 6.0, 'Versión:', '01');
 
         $pdf->SetFont('Helvetica', 'B', 8.5);
         $pdf->SetXY($metaX + 1.2, $y + 12.0);
         $pdf->Cell(24, 3.6, $this->pdfText('Fecha de edición:'), 0, 0, 'L');
         $pdf->SetFont('Helvetica', '', 8.5);
         $pdf->SetXY($metaX + 1.2, $y + 16.3);
-        $pdf->Cell($metaW - 2.4, 3.6, $this->pdfText('10-Ago-2023'), 0, 0, 'L');
+        $pdf->Cell($metaW - 2.4, 3.6, $this->pdfText('22-Jun-2026'), 0, 0, 'L');
     }
 
     private function drawHeaderMetaLine(Fpdf $pdf, float $x, float $y, string $label, string $value): void
@@ -308,7 +308,7 @@ class ReportService
         $this->drawReasonOption($pdf, $x + 104, $thirdY, 40, 'REINDUCCIÓN', $this->reasonMatches($reason, 'REINDUCCIÓN'));
         $this->drawReasonOption($pdf, $x + 150, $thirdY, 40, 'CAPACITACIÓN', $this->reasonMatches($reason, 'CAPACITACIÓN'));
         $this->drawReasonOption($pdf, $x + 198, $thirdY, 83, 'DIVULGACIÓN DE INFORMACIÓN', $this->reasonMatches($reason, 'DIVULGACIÓN DE INFORMACIÓN'));
-
+        
         $this->drawLineField($pdf, $x, $thirdY + 6.8, 281, 'OTRO:', $reason, 12, 9.0, 140);
     }
 

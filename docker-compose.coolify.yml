@@ -1,0 +1,58 @@
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile.prod
+    container_name: attendance_app
+    restart: unless-stopped
+    expose:
+      - "80"
+    environment:
+      APP_ENV: production
+      APP_DEBUG: false
+      APP_KEY: ${APP_KEY}
+      APP_URL: ${APP_URL}
+      DB_CONNECTION: mysql
+      DB_HOST: ${DB_HOST:-db}
+      DB_PORT: 3306
+      DB_DATABASE: ${DB_DATABASE:-attendance}
+      DB_USERNAME: ${DB_USERNAME:-attendance}
+      DB_PASSWORD: ${DB_PASSWORD}
+      DB_ROOT_PASSWORD: ${DB_ROOT_PASSWORD:-root}
+      SESSION_DRIVER: database
+      CACHE_STORE: database
+      QUEUE_CONNECTION: database
+      FILESYSTEM_DISK: local
+      LOG_LEVEL: warning
+    depends_on:
+      db:
+        condition: service_healthy
+    networks:
+      - attendance
+
+  db:
+    image: mysql:8.4
+    container_name: attendance_db
+    restart: unless-stopped
+    environment:
+      MYSQL_DATABASE: ${DB_DATABASE:-attendance}
+      MYSQL_USER: ${DB_USERNAME:-attendance}
+      MYSQL_PASSWORD: ${DB_PASSWORD}
+      MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASSWORD:-root}
+    ports:
+      - "3306:3306"
+    volumes:
+      - db_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD-SHELL", "mysqladmin ping -h 127.0.0.1 -uroot -p$${MYSQL_ROOT_PASSWORD} --silent"]
+      retries: 20
+      timeout: 3s
+      interval: 5s
+    networks:
+      - attendance
+
+networks:
+  attendance:
+
+volumes:
+  db_data:
