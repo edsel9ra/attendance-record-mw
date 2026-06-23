@@ -72,7 +72,21 @@ RUN pnpm install --frozen-lockfile --prod=false
 
 COPY src/ ./
 
-RUN pnpm exec vite build
+# Diagnóstico detallado del build de Vite.
+# Mantener temporalmente hasta encontrar la causa exacta.
+RUN set -eux; \
+    echo "==== Node ===="; node -v; \
+    echo "==== PNPM ===="; pnpm -v; \
+    echo "==== Archivos raíz ===="; ls -la; \
+    echo "==== package.json ===="; cat package.json; \
+    echo "==== vite.config.* ===="; ls -la vite.config.* || true; \
+    if [ -f vite.config.js ]; then cat vite.config.js; fi; \
+    if [ -f vite.config.ts ]; then cat vite.config.ts; fi; \
+    echo "==== resources ===="; find resources -maxdepth 3 -type f | sort || true; \
+    echo "==== public ===="; find public -maxdepth 3 -type f | sort || true; \
+    echo "==== Dependencias clave ===="; pnpm list vite laravel-vite-plugin @vitejs/plugin-vue vue typescript vue-tsc --depth 0 || true; \
+    echo "==== Ejecutando Vite build ===="; \
+    pnpm exec vite build --debug
 
 # Stage 3: Production image
 FROM php_base AS production
