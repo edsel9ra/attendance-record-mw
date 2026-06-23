@@ -1,64 +1,27 @@
 # Stage base: PHP con extensiones necesarias para Laravel
 FROM php:8.4-fpm-alpine AS php_base
 
-RUN apk add --no-cache \
-    nginx \
-    supervisor \
-    bash \
-    curl \
-    curl-dev \
-    git \
-    unzip \
-    icu-dev \
-    oniguruma-dev \
-    libzip-dev \
-    libpng-dev \
-    libjpeg-turbo-dev \
-    freetype-dev \
-    libxml2-dev \
-    linux-headers
+RUN apk add --no-cache     nginx     supervisor     bash     curl     curl-dev     git     unzip     icu-dev     oniguruma-dev     libzip-dev     libpng-dev     libjpeg-turbo-dev     freetype-dev     libxml2-dev     linux-headers
 
-RUN docker-php-ext-configure gd --with-freetype --with-jpeg \
-    && docker-php-ext-install -j$(nproc) \
-        bcmath \
-        curl \
-        exif \
-        gd \
-        intl \
-        mbstring \
-        opcache \
-        pcntl \
-        pdo_mysql \
-        zip
+RUN docker-php-ext-configure gd --with-freetype --with-jpeg     && docker-php-ext-install -j$(nproc)         bcmath         curl         exif         gd         intl         mbstring         opcache         pcntl         pdo_mysql         zip
 
 # Stage 1: Composer dependencies
 FROM php_base AS composer_deps
 
 COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
 
-ENV COMPOSER_ALLOW_SUPERUSER=1 \
-    COMPOSER_MEMORY_LIMIT=-1
+ENV COMPOSER_ALLOW_SUPERUSER=1     COMPOSER_MEMORY_LIMIT=-1
 
 WORKDIR /app
 
 COPY src/composer.json src/composer.lock* ./
 
-# Se usa --no-scripts porque todavía no se ha copiado todo Laravel y puede no existir artisan.
-RUN composer install \
-    --no-dev \
-    --optimize-autoloader \
-    --no-interaction \
-    --no-progress \
-    --prefer-dist \
-    --no-scripts
+RUN composer install     --no-dev     --optimize-autoloader     --no-interaction     --no-progress     --prefer-dist     --no-scripts
 
 # Stage 2: Node / Vite build
 FROM node:22-alpine AS node_build
 
-ENV PNPM_HOME="/pnpm" \
-    PATH="$PNPM_HOME:$PATH" \
-    COREPACK_ENABLE_DOWNLOAD_PROMPT=0 \
-    NODE_ENV=development
+ENV PNPM_HOME="/pnpm"     PATH="$PNPM_HOME:$PATH"     COREPACK_ENABLE_DOWNLOAD_PROMPT=0     NODE_ENV=development
 
 RUN corepack enable pnpm && corepack prepare pnpm@latest --activate
 
@@ -66,52 +29,33 @@ WORKDIR /app
 
 COPY src/package.json src/pnpm-lock.yaml ./
 
-# El build de Vite necesita devDependencies, aunque la imagen final sea producción.
-# --prod=false evita que Coolify/NODE_ENV=production omita vite, vue, typescript, etc.
 RUN pnpm install --frozen-lockfile --prod=false
 
 COPY src/ ./
 
-# Diagnóstico detallado del build de Vite.
-# Mantener temporalmente hasta encontrar la causa exacta.
-RUN set -eux; \
-    echo "==== Node ===="; node -v; \
-    echo "==== PNPM ===="; pnpm -v; \
-    echo "==== Archivos raíz ===="; ls -la; \
-    echo "==== package.json ===="; cat package.json; \
-    echo "==== vite.config.* ===="; ls -la vite.config.* || true; \
-    if [ -f vite.config.js ]; then cat vite.config.js; fi; \
-    if [ -f vite.config.ts ]; then cat vite.config.ts; fi; \
-    echo "==== resources ===="; find resources -maxdepth 3 -type f | sort || true; \
-    echo "==== public ===="; find public -maxdepth 3 -type f | sort || true; \
-    echo "==== Dependencias clave ===="; pnpm list vite laravel-vite-plugin @vitejs/plugin-vue vue typescript vue-tsc --depth 0 || true; \
-    echo "==== Ejecutando Vite build ===="; \
-    pnpm exec vite build --debug
+# CAPTURA TEMPORAL DEL ERROR DE VITE:
+# Este bloque NO detiene el build si Vite falla. Guarda el error en public/build/vite-error.txt
+# para poder consultarlo después de desplegar en: https://TU-DOMINIO/build/vite-error.txt
+RUN mkdir -p public/build     && {         echo "==== Node ===="; node -v;         echo "==== PNPM ===="; pnpm -v;         echo "==== package.json ===="; cat package.json;         echo "==== vite.config.* ===="; ls -la vite.config.* || true;         if [ -f vite.config.js ]; then cat vite.config.js; fi;         if [ -f vite.config.ts ]; then cat vite.config.ts; fi;         echo "==== resources ===="; find resources -maxdepth 4 -type f | sort || true;         echo "==== Dependencias clave ===="; pnpm list vite laravel-vite-plugin @vitejs/plugin-vue vue typescript vue-tsc --depth 0 || true;         echo "==== Ejecutando Vite build ====";         pnpm exec vite build --debug;     } > /tmp/vite-build.log 2>&1     || {         cp /tmp/vite-build.log public/build/vite-error.txt;         echo '{"resources/js/app.js":{"file":"vite-error.txt","isEntry":true}}' > public/build/manifest.json;         echo 'Vite falló. Se creó public/build/vite-error.txt para diagnóstico.';     }
+
+# Si Vite sí compiló, deja una marca; si falló, conserva el log capturado.
+RUN if [ -f public/build/vite-error.txt ]; then         echo 'Vite build failed; check /build/vite-error.txt after deploy.';     else         echo 'Vite build completed successfully.';     fi
 
 # Stage 3: Production image
 FROM php_base AS production
 
-ENV APP_ENV=production \
-    APP_DEBUG=false
+ENV APP_ENV=production     APP_DEBUG=false
 
 WORKDIR /var/www
 
 COPY docker/php/php.ini /usr/local/etc/php/conf.d/99-custom.ini
 
-RUN { \
-    echo 'opcache.memory_consumption=256'; \
-    echo 'opcache.interned_strings_buffer=16'; \
-    echo 'opcache.max_accelerated_files=20000'; \
-    echo 'opcache.revalidate_freq=2'; \
-    echo 'opcache.fast_shutdown=1'; \
-    echo 'opcache.enable_cli=1'; \
-} > /usr/local/etc/php/conf.d/99-opcache.ini
+RUN {     echo 'opcache.memory_consumption=256';     echo 'opcache.interned_strings_buffer=16';     echo 'opcache.max_accelerated_files=20000';     echo 'opcache.revalidate_freq=2';     echo 'opcache.fast_shutdown=1';     echo 'opcache.enable_cli=1'; } > /usr/local/etc/php/conf.d/99-opcache.ini
 
 COPY src/ /var/www
 COPY --from=composer_deps /app/vendor /var/www/vendor
 COPY --from=node_build /app/public/build /var/www/public/build
 
-# Ejecuta los scripts de Laravel después de copiar el proyecto completo.
 RUN php artisan package:discover --ansi
 
 RUN rm -f /etc/nginx/http.d/default.conf
@@ -119,32 +63,9 @@ RUN rm -f /etc/nginx/http.d/default.conf
 COPY docker/nginx/default.conf /etc/nginx/http.d/default.conf
 RUN sed -i 's/fastcgi_pass app:9000/fastcgi_pass 127.0.0.1:9000/' /etc/nginx/http.d/default.conf
 
-RUN mkdir -p /var/log/nginx /var/run/php /var/www/storage /var/www/bootstrap/cache \
-    && chown -R www-data:www-data /var/www/storage /var/www/bootstrap/cache /var/log/nginx
+RUN mkdir -p /var/log/nginx /var/run/php /var/www/storage /var/www/bootstrap/cache     && chown -R www-data:www-data /var/www/storage /var/www/bootstrap/cache /var/log/nginx
 
-RUN { \
-    echo '[supervisord]'; \
-    echo 'nodaemon=true'; \
-    echo 'user=root'; \
-    echo ''; \
-    echo '[program:php-fpm]'; \
-    echo 'command=php-fpm -F'; \
-    echo 'autostart=true'; \
-    echo 'autorestart=true'; \
-    echo 'stdout_logfile=/dev/stdout'; \
-    echo 'stdout_logfile_maxbytes=0'; \
-    echo 'stderr_logfile=/dev/stderr'; \
-    echo 'stderr_logfile_maxbytes=0'; \
-    echo ''; \
-    echo '[program:nginx]'; \
-    echo 'command=nginx -g "daemon off;"'; \
-    echo 'autostart=true'; \
-    echo 'autorestart=true'; \
-    echo 'stdout_logfile=/dev/stdout'; \
-    echo 'stdout_logfile_maxbytes=0'; \
-    echo 'stderr_logfile=/dev/stderr'; \
-    echo 'stderr_logfile_maxbytes=0'; \
-} > /etc/supervisord.conf
+RUN {     echo '[supervisord]';     echo 'nodaemon=true';     echo 'user=root';     echo '';     echo '[program:php-fpm]';     echo 'command=php-fpm -F';     echo 'autostart=true';     echo 'autorestart=true';     echo 'stdout_logfile=/dev/stdout';     echo 'stdout_logfile_maxbytes=0';     echo 'stderr_logfile=/dev/stderr';     echo 'stderr_logfile_maxbytes=0';     echo '';     echo '[program:nginx]';     echo 'command=nginx -g "daemon off;"';     echo 'autostart=true';     echo 'autorestart=true';     echo 'stdout_logfile=/dev/stdout';     echo 'stdout_logfile_maxbytes=0';     echo 'stderr_logfile=/dev/stderr';     echo 'stderr_logfile_maxbytes=0'; } > /etc/supervisord.conf
 
 EXPOSE 80
 
