@@ -1,34 +1,13 @@
-# Stage 1: Composer dependencies (PHP)
-FROM composer:2 AS composer
-WORKDIR /app
-COPY src/composer.json src/composer.lock* ./
-RUN composer install \
-    --no-dev \
-    --optimize-autoloader \
-    --no-interaction \
-    --no-progress \
-    --prefer-dist
-
-# Stage 2: Node / Vite build
-FROM node:22-alpine AS node
-ENV PNPM_HOME="/pnpm" \
-    PATH="$PNPM_HOME:$PATH" \
-    COREPACK_ENABLE_DOWNLOAD_PROMPT=0
-RUN corepack enable pnpm && corepack prepare pnpm@latest --activate
-WORKDIR /app
-COPY src/package.json src/pnpm-lock.yaml ./
-RUN pnpm install --frozen-lockfile
-COPY src/ ./
-RUN pnpm run build
-
-# Stage 3: Production image
-FROM php:8.4-fpm-alpine
+# Stage base: PHP con extensiones necesarias para Laravel
+FROM php:8.4-fpm-alpine AS php_base
 
 RUN apk add --no-cache \
     nginx \
     supervisor \
     bash \
     curl \
+    curl-dev \
+    git \
     unzip \
     icu-dev \
     oniguruma-dev \
@@ -52,6 +31,49 @@ RUN docker-php-ext-configure gd --with-freetype --with-jpeg \
         pdo_mysql \
         zip
 
+# Stage 1: Composer dependencies
+FROM php_base AS composer_deps
+
+COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
+
+ENV COMPOSER_ALLOW_SUPERUSER=1 \
+    COMPOSER_MEMORY_LIMIT=-1
+
+WORKDIR /app
+
+COPY src/composer.json src/composer.lock* ./
+
+# Se usa --no-scripts porque todavía no se ha copiado todo Laravel y puede no existir artisan.
+RUN composer install \
+    --no-dev \
+    --optimize-autoloader \
+    --no-interaction \
+    --no-progress \
+    --prefer-dist \
+    --no-scripts
+
+# Stage 2: Node / Vite build
+FROM node:22-alpine AS node
+
+ENV PNPM_HOME="/pnpm" \
+    PATH="$PNPM_HOME:$PATH" \
+    COREPACK_ENABLE_DOWNLOAD_PROMPT=0
+
+RUN corepack enable pnpm && corepack prepare pnpm@latest --activate
+
+WORKDIR /app
+
+COPY src/package.json src/pnpm-lock.yaml ./
+RUN pnpm install --frozen-lockfile
+
+COPY src/ ./
+RUN pnpm run build
+
+# Stage 3: Production image
+FROM php_base AS production
+
+WORKDIR /var/www
+
 COPY docker/php/php.ini /usr/local/etc/php/conf.d/99-custom.ini
 
 RUN { \
@@ -64,16 +86,19 @@ RUN { \
 } > /usr/local/etc/php/conf.d/99-opcache.ini
 
 COPY src/ /var/www
-COPY --from=composer /app/vendor /var/www/vendor
+COPY --from=composer_deps /app/vendor /var/www/vendor
 COPY --from=node /app/public/build /var/www/public/build
+
+# Ejecuta los scripts de Laravel después de copiar el proyecto completo.
+RUN php artisan package:discover --ansi
 
 RUN rm -f /etc/nginx/http.d/default.conf
 
 COPY docker/nginx/default.conf /etc/nginx/http.d/default.conf
 RUN sed -i 's/fastcgi_pass app:9000/fastcgi_pass 127.0.0.1:9000/' /etc/nginx/http.d/default.conf
 
-RUN mkdir -p /var/log/nginx /var/run/php && \
-    chown -R www-data:www-data /var/www/storage /var/www/bootstrap/cache /var/log/nginx
+RUN mkdir -p /var/log/nginx /var/run/php /var/www/storage /var/www/bootstrap/cache \
+    && chown -R www-data:www-data /var/www/storage /var/www/bootstrap/cache /var/log/nginx
 
 RUN { \
     echo '[supervisord]'; \
@@ -98,8 +123,6 @@ RUN { \
     echo 'stderr_logfile=/dev/stderr'; \
     echo 'stderr_logfile_maxbytes=0'; \
 } > /etc/supervisord.conf
-
-WORKDIR /var/www
 
 EXPOSE 80
 
