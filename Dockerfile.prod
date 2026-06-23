@@ -59,11 +59,9 @@ RUN corepack enable \
     && pnpm install --frozen-lockfile
 
 COPY src/ ./
-
 COPY --from=vendor /build/vendor /build/vendor
 
 RUN pnpm run build
-
 
 # =========================
 # 4. Imagen final PHP-FPM
@@ -77,7 +75,6 @@ COPY src/ /var/www
 COPY --from=frontend /build/public/build /var/www/public/build
 
 COPY docker/php/php.ini /usr/local/etc/php/conf.d/99-custom.ini
-COPY docker/php/entrypoint.sh /usr/local/bin/entrypoint.sh
 
 RUN mkdir -p \
     storage/app/public \
@@ -88,7 +85,6 @@ RUN mkdir -p \
     bootstrap/cache \
     && ln -sfn /var/www/storage/app/public /var/www/public/storage \
     && chown -R www-data:www-data /var/www/storage /var/www/bootstrap/cache /var/www/public \
-    && chmod +x /usr/local/bin/entrypoint.sh
 
 USER www-data
 
