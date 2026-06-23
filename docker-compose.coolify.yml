@@ -3,56 +3,73 @@ services:
     build:
       context: .
       dockerfile: Dockerfile.prod
-    container_name: attendance_app
+      args:
+        APP_DIR: ${APP_DIR:-src}
     restart: unless-stopped
-    expose:
-      - "80"
-    environment:
-      APP_ENV: production
-      APP_DEBUG: false
-      APP_KEY: ${APP_KEY}
-      APP_URL: ${APP_URL}
-      DB_CONNECTION: mysql
-      DB_HOST: ${DB_HOST:-db}
-      DB_PORT: 3306
-      DB_DATABASE: ${DB_DATABASE:-attendance}
-      DB_USERNAME: ${DB_USERNAME:-attendance}
-      DB_PASSWORD: ${DB_PASSWORD}
-      DB_ROOT_PASSWORD: ${DB_ROOT_PASSWORD:-root}
-      SESSION_DRIVER: database
-      CACHE_STORE: database
-      QUEUE_CONNECTION: database
-      FILESYSTEM_DISK: local
-      LOG_LEVEL: warning
     depends_on:
       db:
         condition: service_healthy
-    networks:
-      - attendance
+    expose:
+      - "80"
+    environment:
+      # Coolify puede generar esta URL/FQDN y enrutarla al puerto 80 del contenedor.
+      SERVICE_URL_APP_80: ${SERVICE_URL_APP_80}
+      APP_NAME: ${APP_NAME:-Laravel}
+      APP_ENV: ${APP_ENV:-production}
+      APP_KEY: ${APP_KEY:?Configura APP_KEY en las variables de entorno de Coolify}
+      APP_DEBUG: ${APP_DEBUG:-false}
+      APP_URL: ${SERVICE_URL_APP_80:-http://localhost}
+      LOG_CHANNEL: ${LOG_CHANNEL:-stack}
+      LOG_LEVEL: ${LOG_LEVEL:-error}
+
+      DB_CONNECTION: mysql
+      DB_HOST: db
+      DB_PORT: 3306
+      DB_DATABASE: ${DB_DATABASE:-laravel}
+      DB_USERNAME: ${DB_USERNAME:-laravel}
+      DB_PASSWORD: ${DB_PASSWORD:-laravel}
+
+      CACHE_STORE: ${CACHE_STORE:-file}
+      SESSION_DRIVER: ${SESSION_DRIVER:-file}
+      QUEUE_CONNECTION: ${QUEUE_CONNECTION:-sync}
+
+      RUN_STORAGE_LINK: ${RUN_STORAGE_LINK:-true}
+      RUN_PACKAGE_DISCOVER: ${RUN_PACKAGE_DISCOVER:-true}
+      RUN_LARAVEL_CACHE: ${RUN_LARAVEL_CACHE:-true}
+      RUN_MIGRATIONS: ${RUN_MIGRATIONS:-false}
+    volumes:
+      - app_storage:/var/www/storage
 
   db:
     image: mysql:8.4
-    container_name: attendance_db
     restart: unless-stopped
     environment:
-      MYSQL_DATABASE: ${DB_DATABASE:-attendance}
-      MYSQL_USER: ${DB_USERNAME:-attendance}
-      MYSQL_PASSWORD: ${DB_PASSWORD}
+      MYSQL_DATABASE: ${DB_DATABASE:-laravel}
+      MYSQL_USER: ${DB_USERNAME:-laravel}
+      MYSQL_PASSWORD: ${DB_PASSWORD:-laravel}
       MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASSWORD:-root}
-    ports:
-      - "3306:3306"
     volumes:
       - db_data:/var/lib/mysql
     healthcheck:
       test: ["CMD-SHELL", "mysqladmin ping -h 127.0.0.1 -uroot -p$${MYSQL_ROOT_PASSWORD} --silent"]
-      retries: 20
-      timeout: 3s
       interval: 5s
-    networks:
-      - attendance
+      timeout: 3s
+      retries: 20
 
-networks:
-  attendance:
+  phpmyadmin:
+    image: phpmyadmin:5.2-apache
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      PMA_HOST: db
+      PMA_PORT: 3306
+      PMA_ARBITRARY: 0
+      UPLOAD_LIMIT: 128M
+    expose:
+      - "80"
 
 volumes:
   db_data:
+  app_storage:
