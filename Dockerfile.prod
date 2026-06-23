@@ -66,17 +66,13 @@ WORKDIR /app
 
 COPY src/package.json src/pnpm-lock.yaml ./
 
+# El build de Vite necesita devDependencies, aunque la imagen final sea producción.
+# --prod=false evita que Coolify/NODE_ENV=production omita vite, vue, typescript, etc.
 RUN pnpm install --frozen-lockfile --prod=false
 
 COPY src/ ./
 
-RUN set -eux; \
-    echo "Node version:"; node -v; \
-    echo "PNPM version:"; pnpm -v; \
-    echo "package.json:"; cat package.json; \
-    echo "Dependencias instaladas:"; pnpm list vite vue typescript vue-tsc @vitejs/plugin-vue --depth 0 || true; \
-    echo "Ejecutando build:"; \
-    pnpm run build
+RUN pnpm exec vite build
 
 # Stage 3: Production image
 FROM php_base AS production
