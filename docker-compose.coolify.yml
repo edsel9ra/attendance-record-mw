@@ -32,7 +32,7 @@ services:
       target: nginx
     container_name: laravel_nginx
     restart: unless-stopped
-    ports:
+    expose:
       - "80"
     depends_on:
       - app
