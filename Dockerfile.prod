@@ -1,72 +1,198 @@
-# Stage base: PHP con extensiones necesarias para Laravel
-FROM php:8.4-fpm-alpine AS php_base
+# syntax=docker/dockerfile:1.7
 
-RUN apk add --no-cache     nginx     supervisor     bash     curl     curl-dev     git     unzip     icu-dev     oniguruma-dev     libzip-dev     libpng-dev     libjpeg-turbo-dev     freetype-dev     libxml2-dev     linux-headers
+ARG PHP_VERSION=8.4
+ARG NODE_VERSION=22
+ARG APP_DIR=src
 
-RUN docker-php-ext-configure gd --with-freetype --with-jpeg     && docker-php-ext-install -j$(nproc)         bcmath         curl         exif         gd         intl         mbstring         opcache         pcntl         pdo_mysql         zip
+FROM node:${NODE_VERSION}-alpine AS assets
+ARG APP_DIR
+WORKDIR /build
 
-# Stage 1: Composer dependencies
-FROM php_base AS composer_deps
+# Copia el proyecto Laravel/Vite desde ./src por compatibilidad con tu compose actual.
+COPY ${APP_DIR}/ ./
 
-COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
+# Instala dependencias frontend y compila assets de Vite para producción.
+RUN if [ -f package.json ]; then \
+        corepack enable && \
+        if [ -f pnpm-lock.yaml ]; then \
+            pnpm install --frozen-lockfile; \
+            pnpm run build; \
+        elif [ -f yarn.lock ]; then \
+            yarn install --frozen-lockfile; \
+            yarn build; \
+        elif [ -f package-lock.json ]; then \
+            npm ci; \
+            npm run build; \
+        else \
+            npm install; \
+            npm run build; \
+        fi; \
+    else \
+        mkdir -p public/build; \
+    fi
 
-ENV COMPOSER_ALLOW_SUPERUSER=1     COMPOSER_MEMORY_LIMIT=-1
-
-WORKDIR /app
-
-COPY src/composer.json src/composer.lock* ./
-
-RUN composer install     --no-dev     --optimize-autoloader     --no-interaction     --no-progress     --prefer-dist     --no-scripts
-
-# Stage 2: Node / Vite build
-FROM node:22-alpine AS node_build
-
-ENV PNPM_HOME="/pnpm"     PATH="$PNPM_HOME:$PATH"     COREPACK_ENABLE_DOWNLOAD_PROMPT=0     NODE_ENV=development
-
-RUN corepack enable pnpm && corepack prepare pnpm@latest --activate
-
-WORKDIR /app
-
-COPY src/package.json src/pnpm-lock.yaml ./
-
-RUN pnpm install --frozen-lockfile --prod=false
-
-COPY src/ ./
-
-# CAPTURA TEMPORAL DEL ERROR DE VITE:
-# Este bloque NO detiene el build si Vite falla. Guarda el error en public/build/vite-error.txt
-# para poder consultarlo después de desplegar en: https://TU-DOMINIO/build/vite-error.txt
-RUN mkdir -p public/build     && {         echo "==== Node ===="; node -v;         echo "==== PNPM ===="; pnpm -v;         echo "==== package.json ===="; cat package.json;         echo "==== vite.config.* ===="; ls -la vite.config.* || true;         if [ -f vite.config.js ]; then cat vite.config.js; fi;         if [ -f vite.config.ts ]; then cat vite.config.ts; fi;         echo "==== resources ===="; find resources -maxdepth 4 -type f | sort || true;         echo "==== Dependencias clave ===="; pnpm list vite laravel-vite-plugin @vitejs/plugin-vue vue typescript vue-tsc --depth 0 || true;         echo "==== Ejecutando Vite build ====";         pnpm exec vite build --debug;     } > /tmp/vite-build.log 2>&1     || {         cp /tmp/vite-build.log public/build/vite-error.txt;         echo '{"resources/js/app.js":{"file":"vite-error.txt","isEntry":true}}' > public/build/manifest.json;         echo 'Vite falló. Se creó public/build/vite-error.txt para diagnóstico.';     }
-
-# Si Vite sí compiló, deja una marca; si falló, conserva el log capturado.
-RUN if [ -f public/build/vite-error.txt ]; then         echo 'Vite build failed; check /build/vite-error.txt after deploy.';     else         echo 'Vite build completed successfully.';     fi
-
-# Stage 3: Production image
-FROM php_base AS production
-
-ENV APP_ENV=production     APP_DEBUG=false
+FROM php:${PHP_VERSION}-fpm-alpine AS app
+ARG APP_DIR
 
 WORKDIR /var/www
 
-COPY docker/php/php.ini /usr/local/etc/php/conf.d/99-custom.ini
+# Paquetes del sistema + Nginx + extensiones PHP requeridas por Laravel.
+RUN apk add --no-cache \
+        bash \
+        curl \
+        git \
+        nginx \
+        unzip \
+        zip \
+        icu-dev \
+        oniguruma-dev \
+        libzip-dev \
+        libpng-dev \
+        libjpeg-turbo-dev \
+        freetype-dev \
+        libxml2-dev \
+        curl-dev \
+        linux-headers \
+    && docker-php-ext-configure gd --with-freetype --with-jpeg \
+    && docker-php-ext-install -j"$(nproc)" \
+        bcmath \
+        curl \
+        exif \
+        gd \
+        intl \
+        mbstring \
+        opcache \
+        pcntl \
+        pdo_mysql \
+        zip \
+    && mkdir -p /run/nginx /var/log/nginx
 
-RUN {     echo 'opcache.memory_consumption=256';     echo 'opcache.interned_strings_buffer=16';     echo 'opcache.max_accelerated_files=20000';     echo 'opcache.revalidate_freq=2';     echo 'opcache.fast_shutdown=1';     echo 'opcache.enable_cli=1'; } > /usr/local/etc/php/conf.d/99-opcache.ini
+COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
 
-COPY src/ /var/www
-COPY --from=composer_deps /app/vendor /var/www/vendor
-COPY --from=node_build /app/public/build /var/www/public/build
+# Configuración PHP equivalente al php.ini enviado.
+RUN cat > /usr/local/etc/php/conf.d/99-custom.ini <<'PHPINI'
+memory_limit=512M
+upload_max_filesize=100M
+post_max_size=100M
+max_execution_time=120
+PHPINI
 
-RUN php artisan package:discover --ansi
+# Mantiene variables de entorno disponibles para Laravel dentro de PHP-FPM.
+RUN cat > /usr/local/etc/php-fpm.d/zz-env.conf <<'FPMCONF'
+[www]
+clear_env = no
+FPMCONF
 
-RUN rm -f /etc/nginx/http.d/default.conf
+# Configuración Nginx de producción basada en default.conf, apuntando a PHP-FPM local.
+RUN rm -f /etc/nginx/http.d/default.conf \
+    && cat > /etc/nginx/http.d/default.conf <<'NGINX'
+server {
+    listen 80;
+    server_name _;
 
-COPY docker/nginx/default.conf /etc/nginx/http.d/default.conf
-RUN sed -i 's/fastcgi_pass app:9000/fastcgi_pass 127.0.0.1:9000/' /etc/nginx/http.d/default.conf
+    root /var/www/public;
+    index index.php index.html;
 
-RUN mkdir -p /var/log/nginx /var/run/php /var/www/storage /var/www/bootstrap/cache     && chown -R www-data:www-data /var/www/storage /var/www/bootstrap/cache /var/log/nginx
+    client_max_body_size 100M;
 
-RUN {     echo '[supervisord]';     echo 'nodaemon=true';     echo 'user=root';     echo '';     echo '[program:php-fpm]';     echo 'command=php-fpm -F';     echo 'autostart=true';     echo 'autorestart=true';     echo 'stdout_logfile=/dev/stdout';     echo 'stdout_logfile_maxbytes=0';     echo 'stderr_logfile=/dev/stderr';     echo 'stderr_logfile_maxbytes=0';     echo '';     echo '[program:nginx]';     echo 'command=nginx -g "daemon off;"';     echo 'autostart=true';     echo 'autorestart=true';     echo 'stdout_logfile=/dev/stdout';     echo 'stdout_logfile_maxbytes=0';     echo 'stderr_logfile=/dev/stderr';     echo 'stderr_logfile_maxbytes=0'; } > /etc/supervisord.conf
+    error_log  /var/log/nginx/error.log;
+    access_log /var/log/nginx/access.log;
+
+    location / {
+        try_files $uri $uri/ /index.php?$query_string;
+    }
+
+    location = /favicon.ico {
+        access_log off;
+        log_not_found off;
+    }
+
+    location = /robots.txt {
+        access_log off;
+        log_not_found off;
+    }
+
+    location ~ \.php$ {
+        try_files $uri =404;
+
+        include fastcgi_params;
+        fastcgi_pass 127.0.0.1:9000;
+        fastcgi_index index.php;
+
+        fastcgi_param SCRIPT_FILENAME $realpath_root$fastcgi_script_name;
+        fastcgi_param DOCUMENT_ROOT $realpath_root;
+
+        fastcgi_read_timeout 120;
+    }
+
+    location ~* \.(?:css|js|jpg|jpeg|gif|png|ico|svg|webp|woff2?|ttf|eot)$ {
+        expires 30d;
+        access_log off;
+        add_header Cache-Control "public";
+        try_files $uri /index.php?$query_string;
+    }
+
+    location ~ /\.(?!well-known).* {
+        deny all;
+    }
+}
+NGINX
+
+# Copia el código Laravel y prepara dependencias PHP para producción.
+COPY ${APP_DIR}/ ./
+
+RUN composer install \
+        --no-dev \
+        --prefer-dist \
+        --no-interaction \
+        --no-progress \
+        --optimize-autoloader \
+        --no-scripts \
+    && rm -rf /root/.composer/cache \
+    && rm -f public/hot \
+    && mkdir -p storage/app/public storage/framework/cache storage/framework/sessions storage/framework/views storage/logs bootstrap/cache \
+    && chown -R www-data:www-data storage bootstrap/cache \
+    && chmod -R ug+rwX storage bootstrap/cache
+
+# Assets generados por Vite.
+COPY --from=assets --chown=www-data:www-data /build/public/build ./public/build
+
+# Entrypoint: prepara storage, cache opcional, migraciones opcionales y arranca PHP-FPM + Nginx.
+RUN cat > /usr/local/bin/docker-entrypoint-prod <<'SH'
+#!/usr/bin/env sh
+set -e
+
+cd /var/www
+
+mkdir -p storage/app/public storage/framework/cache storage/framework/sessions storage/framework/views storage/logs bootstrap/cache
+chown -R www-data:www-data storage bootstrap/cache
+chmod -R ug+rwX storage bootstrap/cache
+
+if [ "${RUN_STORAGE_LINK:-true}" = "true" ]; then
+    php artisan storage:link || true
+fi
+
+if [ "${RUN_PACKAGE_DISCOVER:-true}" = "true" ]; then
+    php artisan package:discover --ansi || true
+fi
+
+if [ "${RUN_LARAVEL_CACHE:-true}" = "true" ]; then
+    php artisan config:cache || true
+    php artisan view:cache || true
+fi
+
+if [ "${RUN_MIGRATIONS:-false}" = "true" ]; then
+    php artisan migrate --force
+fi
+
+php-fpm -D
+exec nginx -g 'daemon off;'
+SH
+
+RUN chmod +x /usr/local/bin/docker-entrypoint-prod
 
 EXPOSE 80
 
-CMD ["supervisord", "-c", "/etc/supervisord.conf"]
+HEALTHCHECK --interval=30s --timeout=5s --retries=5 CMD pidof nginx >/dev/null && pidof php-fpm >/dev/null || exit 1
+
+ENTRYPOINT ["docker-entrypoint-prod"]
