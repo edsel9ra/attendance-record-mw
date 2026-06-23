@@ -29,12 +29,20 @@ RUN docker-php-ext-configure gd --with-freetype --with-jpeg \
     && docker-php-ext-install intl \
     && docker-php-ext-install gd \
     && docker-php-ext-install opcache
+
+# Si tu proyecto usa SQL Server, puedes activar esto:
+# RUN pecl install sqlsrv pdo_sqlsrv \
+#     && docker-php-ext-enable sqlsrv pdo_sqlsrv
+
+
 # =========================
 # 2. Dependencias Composer
 # =========================
 FROM php-base AS vendor
 
 WORKDIR /build
+
+COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
 
 COPY src/composer.json src/composer.lock ./
 
@@ -44,6 +52,7 @@ RUN composer install \
     --no-interaction \
     --no-progress \
     --no-scripts
+
 
 # =========================
 # 3. Build de Vite
@@ -62,6 +71,7 @@ COPY src/ ./
 COPY --from=vendor /build/vendor /build/vendor
 
 RUN pnpm run build
+
 
 # =========================
 # 4. Imagen final PHP-FPM
@@ -84,12 +94,14 @@ RUN mkdir -p \
     storage/logs \
     bootstrap/cache \
     && ln -sfn /var/www/storage/app/public /var/www/public/storage \
-    && chown -R www-data:www-data /var/www/storage /var/www/bootstrap/cache /var/www/public \
+    && chown -R www-data:www-data /var/www/storage /var/www/bootstrap/cache /var/www/public
 
 USER www-data
 
 EXPOSE 9000
+
 CMD ["php-fpm"]
+
 
 # =========================
 # 5. Imagen Nginx
