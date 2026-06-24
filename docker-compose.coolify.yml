@@ -19,8 +19,12 @@ services:
       DB_USERNAME: ${DB_USERNAME:-laravel}
       DB_PASSWORD: ${DB_PASSWORD:-laravel}
       APP_KEY: ${APP_KEY}
+      APP_URL: ${APP_URL}
       QUEUE_CONNECTION: database
       CACHE_STORE: database
+      SESSION_DRIVER: database
+    volumes:
+      - public_storage:/var/www/storage/app/public
     depends_on:
       db:
         condition: service_healthy
@@ -34,6 +38,8 @@ services:
     restart: unless-stopped
     expose:
       - "80"
+    volumes:
+      - public_storage:/var/www/storage/app/public
     depends_on:
       - app
 
@@ -56,3 +62,4 @@ services:
 
 volumes:
   db_data:
+  public_storage:
