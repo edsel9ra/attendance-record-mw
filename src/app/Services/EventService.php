@@ -42,6 +42,6 @@ class EventService
         }
 
         $extension = strtolower(pathinfo($event->attachment_path, PATHINFO_EXTENSION));
-        return in_array($extension, ['pdf', 'jpg', 'jpeg', 'png', 'gif', 'webp']);
+        return in_array($extension, ['pdf', 'jpg', 'jpeg', 'png', 'gif', 'webp', 'pdf']);
     }
 }
