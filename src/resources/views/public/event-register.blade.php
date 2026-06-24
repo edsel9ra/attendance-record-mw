@@ -70,10 +70,10 @@
                         ['A','E','I','O','U','U','N','A','E','I','O','U','U','N'],
                         Str::upper($reason)
                     );
-                    $isInduccion   = $reason !== '' && str_contains($reasonNorm, 'INDUCCION CORPORATIVA');
-                    $isReinduccion = $reason !== '' && str_contains($reasonNorm, 'REINDUCCION');
-                    $isCapacitacion = $reason !== '' && str_contains($reasonNorm, 'CAPACITACION');
-                    $isDivulgacion = $reason !== '' && str_contains($reasonNorm, 'DIVULGACION DE INFORMACION');
+                    $isInduccion   = $reason !== '' && str_contains($reasonNorm, 'INDUCCIÓN CORPORATIVA');
+                    $isReinduccion = $reason !== '' && str_contains($reasonNorm, 'REINDUCCIÓN');
+                    $isCapacitacion = $reason !== '' && str_contains($reasonNorm, 'CAPACITACIÓN');
+                    $isDivulgacion = $reason !== '' && str_contains($reasonNorm, 'DIVULGACIÓN DE INFORMACIÓN');
                 @endphp
                 <div class="bg-white px-4 pb-4 sm:px-6">
                     <div class="w-full border-x border-b border-black bg-white font-sans text-black divide-y divide-black text-[9px]">
