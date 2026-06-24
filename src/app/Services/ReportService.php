@@ -1,5 +1,4 @@
 <?php
-
 namespace App\Services;
 
 use App\Models\Event;
@@ -303,13 +302,16 @@ class ReportService
         $pdf->SetXY($x, $thirdY);
         $pdf->Cell(42, 4, $this->pdfText('MOTIVO DE LA REUNIÓN:'), 0, 0, 'L');
 
-        $reason = $event->reason ?? '';
-        $this->drawReasonOption($pdf, $x + 44, $thirdY, 55, 'INDUCCIÓN CORPORATIVA', $this->reasonMatches($reason, 'INDUCCIÓN CORPORATIVA'));
-        $this->drawReasonOption($pdf, $x + 104, $thirdY, 40, 'REINDUCCIÓN', $this->reasonMatches($reason, 'REINDUCCIÓN'));
-        $this->drawReasonOption($pdf, $x + 150, $thirdY, 40, 'CAPACITACIÓN', $this->reasonMatches($reason, 'CAPACITACIÓN'));
-        $this->drawReasonOption($pdf, $x + 198, $thirdY, 83, 'DIVULGACIÓN DE INFORMACIÓN', $this->reasonMatches($reason, 'DIVULGACIÓN DE INFORMACIÓN'));
-        
-        $this->drawLineField($pdf, $x, $thirdY + 6.8, 281, 'OTRO:', $reason, 12, 9.0, 140);
+        $reason = trim((string) ($event->reason ?? ''));
+        $selectedReasonKey = $this->getSelectedReasonKey($reason);
+        $isOtherReason = $reason !== '' && $selectedReasonKey === null;
+
+        $this->drawReasonOption($pdf, $x + 44, $thirdY, 55, 'INDUCCIÓN CORPORATIVA', $selectedReasonKey === 'induccion');
+        $this->drawReasonOption($pdf, $x + 104, $thirdY, 40, 'REINDUCCIÓN', $selectedReasonKey === 'reinduccion');
+        $this->drawReasonOption($pdf, $x + 150, $thirdY, 40, 'CAPACITACIÓN', $selectedReasonKey === 'capacitacion');
+        $this->drawReasonOption($pdf, $x + 198, $thirdY, 83, 'DIVULGACIÓN DE INFORMACIÓN', $selectedReasonKey === 'divulgacion');
+
+        $this->drawOtherReasonField($pdf, $x, $thirdY + 6.8, 281, $isOtherReason ? $reason : '', $isOtherReason);
     }
 
     private function drawLineField(
@@ -338,20 +340,94 @@ class ReportService
 
     private function drawReasonOption(Fpdf $pdf, float $x, float $y, float $w, string $label, bool $checked): void
     {
-        $pdf->SetFont('Helvetica', 'B', 8.5);
-        $pdf->SetXY($x, $y);
-        $labelWidth = $pdf->GetStringWidth($this->pdfText($label)) + 1.2;
-        $pdf->Cell($labelWidth, 4, $this->pdfText($label), 0, 0, 'L');
-
-        $lineX = $x + $labelWidth;
-        $lineY = $y + 4.2;
-        $pdf->Line($lineX, $lineY, $x + $w, $lineY);
+        $labelText = $this->pdfText($label);
+        $checkSize = 4.6;
+        $gap = 1.3;
+        $labelWidth = max($w - $checkSize - $gap, 1);
+        $boxY = $y - 0.7;
+        $boxHeight = 5.1;
+        $checkX = $x + $labelWidth + $gap;
 
         if ($checked) {
-            $pdf->SetFont('Helvetica', 'B', 8.5);
-            $pdf->SetXY($lineX + 1.5, $y + 0.1);
-            $pdf->Cell(4, 3.8, 'X', 0, 0, 'C');
+            $pdf->SetFillColor(254, 226, 226);
+            $pdf->SetDrawColor(185, 28, 28);
+            $pdf->SetTextColor(153, 27, 27);
+            $pdf->SetLineWidth(0.35);
+            $pdf->Rect($x, $boxY, $labelWidth, $boxHeight, 'DF');
+
+            $pdf->SetFont('Helvetica', 'B', 8.2);
+            $pdf->SetXY($x + 1, $y - 0.05);
+            $pdf->Cell(max($labelWidth - 2, 1), 4, $labelText, 0, 0, 'L');
+
+            $pdf->SetFillColor(220, 38, 38);
+            $pdf->SetDrawColor(185, 28, 28);
+            $pdf->Rect($checkX, $y - 0.45, $checkSize, $checkSize, 'DF');
+
+            $pdf->SetTextColor(255, 255, 255);
+            $pdf->SetFont('Helvetica', 'B', 8.0);
+            $pdf->SetXY($checkX, $y - 0.35);
+            $pdf->Cell($checkSize, $checkSize, 'X', 0, 0, 'C');
+        } else {
+            $pdf->SetDrawColor(0, 0, 0);
+            $pdf->SetTextColor(0, 0, 0);
+            $pdf->SetLineWidth(0.25);
+            $pdf->SetFont('Helvetica', 'B', 8.2);
+            $pdf->SetXY($x, $y);
+            $pdf->Cell($labelWidth, 4, $labelText, 0, 0, 'L');
+            $pdf->Rect($checkX, $y - 0.45, $checkSize, $checkSize, 'D');
         }
+
+        $pdf->SetDrawColor(0, 0, 0);
+        $pdf->SetTextColor(0, 0, 0);
+        $pdf->SetLineWidth(0.25);
+    }
+
+    private function drawOtherReasonField(Fpdf $pdf, float $x, float $y, float $w, string $value, bool $checked): void
+    {
+        $labelW = 13;
+        $height = 5.8;
+        $checkSize = 4.6;
+
+        if ($checked) {
+            $pdf->SetFillColor(254, 226, 226);
+            $pdf->SetDrawColor(185, 28, 28);
+            $pdf->SetTextColor(153, 27, 27);
+            $pdf->SetLineWidth(0.35);
+            $pdf->Rect($x, $y - 0.8, $w, $height, 'DF');
+        } else {
+            $pdf->SetDrawColor(0, 0, 0);
+            $pdf->SetTextColor(0, 0, 0);
+            $pdf->SetLineWidth(0.25);
+        }
+
+        $pdf->SetFont('Helvetica', 'B', 9.0);
+        $pdf->SetXY($x, $y);
+        $pdf->Cell($labelW, 4, $this->pdfText('OTRO:'), 0, 0, 'L');
+
+        $lineX = $x + $labelW;
+        $lineY = $y + 4.2;
+        $lineEndX = $checked ? $x + $w - 8 : $x + $w;
+        $pdf->Line($lineX, $lineY, $lineEndX, $lineY);
+
+        $pdf->SetFont('Helvetica', $checked ? 'B' : '', 8.8);
+        $pdf->SetXY($lineX + 1, $y + 0.1);
+        $pdf->Cell(max($lineEndX - $lineX - 1, 1), 3.8, $this->pdfText($value, 140), 0, 0, 'L');
+
+        if ($checked) {
+            $checkX = $x + $w - 6.5;
+            $pdf->SetFillColor(220, 38, 38);
+            $pdf->SetDrawColor(185, 28, 28);
+            $pdf->Rect($checkX, $y - 0.4, $checkSize, $checkSize, 'DF');
+
+            $pdf->SetTextColor(255, 255, 255);
+            $pdf->SetFont('Helvetica', 'B', 8.0);
+            $pdf->SetXY($checkX, $y - 0.3);
+            $pdf->Cell($checkSize, $checkSize, 'X', 0, 0, 'C');
+        }
+
+        $pdf->SetDrawColor(0, 0, 0);
+        $pdf->SetTextColor(0, 0, 0);
+        $pdf->SetLineWidth(0.25);
     }
 
     private function drawAttendanceTableHeader(Fpdf $pdf, float $y): float
@@ -481,20 +557,40 @@ class ReportService
         }
     }
 
-    private function reasonMatches(string $reason, string $expected): bool
+    private function getReasonOptions(): array
     {
-        $reason = $this->normalizeText($reason);
-        $expected = $this->normalizeText($expected);
-
-        return $reason !== '' && str_contains($reason, $expected);
+        return [
+            'induccion' => 'INDUCCIÓN CORPORATIVA',
+            'reinduccion' => 'REINDUCCIÓN',
+            'capacitacion' => 'CAPACITACIÓN',
+            'divulgacion' => 'DIVULGACIÓN DE INFORMACIÓN',
+        ];
     }
 
-    private function normalizeText(string $text): string
+    private function getSelectedReasonKey(?string $reason): ?string
     {
-        $text = mb_strtoupper($text, 'UTF-8');
+        $reason = $this->normalizeReasonValue($reason);
+
+        if ($reason === '') {
+            return null;
+        }
+
+        foreach ($this->getReasonOptions() as $key => $label) {
+            if ($reason === $this->normalizeReasonValue($label)) {
+                return $key;
+            }
+        }
+
+        return null;
+    }
+
+    private function normalizeReasonValue(?string $text): string
+    {
+        $text = mb_strtoupper(trim((string) $text), 'UTF-8');
+        $text = preg_replace('/\s+/', ' ', $text) ?? $text;
         $converted = iconv('UTF-8', 'ASCII//TRANSLIT', $text);
 
-        return $converted !== false ? $converted : $text;
+        return trim($converted !== false ? $converted : $text);
     }
 
     private function pdfText(?string $text, int $limit = 0): string
