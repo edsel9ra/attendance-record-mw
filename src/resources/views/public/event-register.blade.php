@@ -64,16 +64,39 @@
 
                 {{-- Informacion del evento (mismo diseno que drawEventMainInformation) --}}
                 @php
-                    $reason = $event->reason ?? '';
-                    $reasonNorm = str_replace(
-                        ['Á','É','Í','Ó','Ú','Ü','Ñ','á','é','í','ó','ú','ü','ñ'],
-                        ['A','E','I','O','U','U','N','A','E','I','O','U','U','N'],
-                        Str::upper($reason)
-                    );
-                    $isInduccion   = $reason !== '' && str_contains($reasonNorm, 'INDUCCIÓN CORPORATIVA');
-                    $isReinduccion = $reason !== '' && str_contains($reasonNorm, 'REINDUCCIÓN');
-                    $isCapacitacion = $reason !== '' && str_contains($reasonNorm, 'CAPACITACIÓN');
-                    $isDivulgacion = $reason !== '' && str_contains($reasonNorm, 'DIVULGACIÓN DE INFORMACIÓN');
+                    $reason = trim((string) ($event->reason ?? ''));
+                
+                    $normalizeReason = function ($value) {
+                        return str_replace(
+                            ['Á','É','Í','Ó','Ú','Ü','Ñ','á','é','í','ó','ú','ü','ñ'],
+                            ['A','E','I','O','U','U','N','A','E','I','O','U','U','N'],
+                            \Illuminate\Support\Str::upper(trim((string) $value))
+                        );
+                    };
+                
+                    /*
+                     * Motivos parametrizados.
+                     * OTRO solo aplica cuando $event->reason NO coincide exactamente
+                     * con una de estas opciones.
+                     */
+                    $reasonOptions = [
+                        'induccion' => 'INDUCCIÓN CORPORATIVA',
+                        'reinduccion' => 'REINDUCCIÓN',
+                        'capacitacion' => 'CAPACITACIÓN',
+                        'divulgacion' => 'DIVULGACIÓN DE INFORMACIÓN',
+                    ];
+                
+                    $reasonNorm = $normalizeReason($reason);
+                    $selectedReasonKey = null;
+                
+                    foreach ($reasonOptions as $key => $label) {
+                        if ($reasonNorm !== '' && $reasonNorm === $normalizeReason($label)) {
+                            $selectedReasonKey = $key;
+                            break;
+                        }
+                    }
+                
+                    $isOtherReason = $reasonNorm !== '' && $selectedReasonKey === null;
                 @endphp
                 <div class="bg-white px-4 pb-4 sm:px-6">
                     <div class="w-full border-x border-b border-black bg-white font-sans text-black divide-y divide-black text-[9px]">
@@ -115,22 +138,48 @@
                         </div>
 
                         {{-- Row 3: MOTIVO DE LA REUNIÓN + opciones --}}
-                        <div class="flex flex-wrap items-baseline gap-x-0.5 gap-y-0.5 px-2 py-1.5">
-                            <span class="font-bold">MOTIVO DE LA REUNIÓN:</span>
-                            <span class="font-bold ml-1">INDUCCIÓN CORPORATIVA</span>
-                            <span class="min-w-[16px] text-center font-bold">{{ $isInduccion ? 'X' : '' }}</span>
-                            <span class="font-bold ml-1">REINDUCCIÓN</span>
-                            <span class="min-w-[16px] text-center font-bold">{{ $isReinduccion ? 'X' : '' }}</span>
-                            <span class="font-bold ml-1">CAPACITACIÓN</span>
-                            <span class="min-w-[16px] text-center font-bold">{{ $isCapacitacion ? 'X' : '' }}</span>
-                            <span class="font-bold ml-1">DIVULGACIÓN DE INFORMACIÓN</span>
-                            <span class="min-w-[16px] text-center font-bold flex-1">{{ $isDivulgacion ? 'X' : '' }}</span>
+                        <div class="flex flex-wrap items-center gap-x-1 gap-y-1 px-2 py-1.5">
+                            <span class="font-bold mr-1">MOTIVO DE LA REUNIÓN:</span>
+                        
+                            @foreach ($reasonOptions as $key => $label)
+                                @php
+                                    $isSelected = $selectedReasonKey === $key;
+                                @endphp
+                        
+                                <span class="{{ $isSelected
+                                    ? 'inline-flex items-center rounded bg-red-100 px-1.5 py-0.5 font-black text-red-800 ring-1 ring-red-600'
+                                    : 'font-bold ml-1'
+                                }}">
+                                    {{ $label }}
+                                </span>
+                        
+                                <span class="{{ $isSelected
+                                    ? 'inline-flex min-w-[18px] h-[18px] items-center justify-center rounded border border-red-700 bg-red-600 text-white text-[10px] font-black'
+                                    : 'inline-flex min-w-[18px] h-[18px] items-center justify-center rounded border border-black/40 text-center font-bold'
+                                }}">
+                                    {{ $isSelected ? 'X' : '' }}
+                                </span>
+                            @endforeach
                         </div>
 
                         {{-- Row 4: OTRO --}}
-                        <div class="flex items-baseline px-2 py-1.5">
-                            <span class="font-bold shrink-0">OTRO:</span>
-                            <span class="ml-1 flex-1 min-w-[80px]">{{ $reason }}</span>
+                        <div class="{{ $isOtherReason
+                            ? 'flex items-center px-2 py-1.5 bg-red-50 ring-1 ring-inset ring-red-600'
+                            : 'flex items-center px-2 py-1.5'
+                        }}">
+                            <span class="{{ $isOtherReason ? 'font-black text-red-800 shrink-0' : 'font-bold shrink-0' }}">
+                                OTRO:
+                            </span>
+                        
+                            <span class="{{ $isOtherReason ? 'ml-1 flex-1 min-w-[80px] font-black text-red-800' : 'ml-1 flex-1 min-w-[80px]' }}">
+                                {{ $isOtherReason ? $reason : '' }}
+                            </span>
+                        
+                            @if ($isOtherReason)
+                                <span class="inline-flex min-w-[18px] h-[18px] items-center justify-center rounded border border-red-700 bg-red-600 text-white text-[10px] font-black">
+                                    X
+                                </span>
+                            @endif
                         </div>
                     </div>
 
