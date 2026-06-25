@@ -8,23 +8,45 @@
     @if (file_exists(public_path('build/manifest.json')) || file_exists(public_path('hot')))
         @vite(['resources/css/app.css', 'resources/js/app.js'])
     @endif
-    <style>
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
-        .animate-in { animation: fadeIn 0.3s ease-out both; }
-    </style>
 </head>
-<body class="min-h-screen bg-warm-100 font-sans antialiased">
-    <div class="min-h-screen flex items-center justify-center px-4">
-        <div class="animate-in w-full max-w-lg">
-            <div class="bg-white rounded-2xl shadow-lg shadow-warm-900/5 p-8">
-                <div class="text-center mb-8">
-                    <h1 class="font-serif text-2xl text-navy-900">Reporte de Asistencias</h1>
-                    <p class="text-warm-500 text-sm mt-2">Seleccione el evento y formato para descargar</p>
+<body class="ambient-shell min-h-screen font-sans antialiased">
+    <a href="#contenido-principal" class="skip-link">Saltar al formulario</a>
+
+    <main id="contenido-principal" tabindex="-1" class="relative z-10 flex min-h-screen items-center justify-center px-4 py-10 sm:px-6">
+        <div class="surface-card reveal grid w-full max-w-4xl overflow-hidden rounded-[1.75rem] lg:grid-cols-[0.9fr_1.1fr]" style="--reveal-delay: 80ms;">
+            <aside class="relative overflow-hidden bg-navy-900 p-8 text-white sm:p-10" aria-labelledby="report-title">
+                <div class="absolute -left-16 -top-20 h-52 w-52 rounded-full bg-red-500/20 blur-3xl" aria-hidden="true"></div>
+                <div class="absolute -bottom-24 right-0 h-64 w-64 rounded-full bg-gold-300/20 blur-3xl" aria-hidden="true"></div>
+                <div class="relative flex h-full flex-col justify-between gap-10">
+                    <div>
+                        <span class="inline-flex rounded-full border border-white/10 bg-white/10 px-3 py-1 text-xs font-bold uppercase tracking-[0.22em] text-gold-300">Reportes</span>
+                        <h1 id="report-title" class="mt-5 font-serif text-4xl leading-tight">Descarga de asistencias</h1>
+                        <p class="mt-4 text-sm leading-6 text-white/70">Filtre por evento y, si lo necesita, por sede. Si deja la sede vacía, se exportarán todas las asistencias del evento seleccionado.</p>
+                    </div>
+
+                    <div class="grid gap-3 text-sm">
+                        <div class="rounded-2xl border border-white/10 bg-white/10 p-4 backdrop-blur">
+                            <span class="block text-white/50">Formatos disponibles</span>
+                            <strong class="mt-1 block text-lg">Hoja de cálculo y PDF</strong>
+                        </div>
+                        <div class="rounded-2xl border border-white/10 bg-white/10 p-4 backdrop-blur">
+                            <span class="block text-white/50">Filtro opcional</span>
+                            <strong class="mt-1 block text-lg">Sede de asistencia</strong>
+                        </div>
+                    </div>
+                </div>
+            </aside>
+
+            <section class="bg-white/90 p-6 sm:p-8 lg:p-10">
+                <div class="mb-7">
+                    <span class="text-xs font-bold uppercase tracking-[0.22em] text-red-600">Configurar exporte</span>
+                    <h2 class="mt-2 font-serif text-3xl text-navy-900">Seleccione los datos</h2>
                 </div>
 
                 @if ($errors->any())
-                    <div class="mb-6 p-4 bg-red-50 border border-red-200 rounded-xl text-sm text-red-700">
-                        <ul class="list-disc list-inside">
+                    <div class="mb-6 rounded-2xl border border-red-200 bg-red-50 p-4 text-sm text-red-700 shadow-sm shadow-red-900/5" role="alert" aria-live="assertive" tabindex="-1" data-focus-on-load="true">
+                        <p class="mb-2 font-bold">Revise los campos marcados:</p>
+                        <ul class="list-disc list-inside space-y-1">
                             @foreach ($errors->all() as $error)
                                 <li>{{ $error }}</li>
                             @endforeach
@@ -34,9 +56,8 @@
 
                 <form action="{{ route('attendances.export') }}" method="GET" class="space-y-6">
                     <div>
-                        <label for="event_id" class="block text-sm font-medium text-navy-700 mb-2">Evento</label>
-                        <select name="event_id" id="event_id" required
-                            class="w-full px-4 py-3 rounded-xl border border-warm-200 bg-warm-50 text-navy-900 text-sm focus:ring-2 focus:ring-navy-500/20 focus:border-navy-500 transition-all">
+                        <label for="event_id" class="mb-2 block text-sm font-semibold text-navy-800">Evento</label>
+                        <select name="event_id" id="event_id" required class="form-control" aria-invalid="{{ $errors->has('event_id') ? 'true' : 'false' }}" @error('event_id') aria-describedby="event_id-error" @enderror>
                             <option value="">Seleccionar evento</option>
                             @foreach ($events as $event)
                                 <option value="{{ $event->id }}" {{ request('event_id') == $event->id ? 'selected' : '' }}>
@@ -44,42 +65,64 @@
                                 </option>
                             @endforeach
                         </select>
+                        @error('event_id')
+                            <p id="event_id-error" class="field-error">{{ $message }}</p>
+                        @enderror
                     </div>
 
                     <div>
-                        <label class="block text-sm font-medium text-navy-700 mb-3">Formato</label>
+                        <label for="headquarter_id" class="mb-2 block text-sm font-semibold text-navy-800">Sede</label>
+                        <select name="headquarter_id" id="headquarter_id" class="form-control" aria-invalid="{{ $errors->has('headquarter_id') ? 'true' : 'false' }}" @error('headquarter_id') aria-describedby="headquarter_id-error" @enderror>
+                            <option value="">Todas las sedes</option>
+                            @foreach ($headquarters as $headquarter)
+                                <option value="{{ $headquarter->id }}" {{ request('headquarter_id') == $headquarter->id ? 'selected' : '' }}>
+                                    {{ $headquarter->name }}
+                                </option>
+                            @endforeach
+                        </select>
+                        @error('headquarter_id')
+                            <p id="headquarter_id-error" class="field-error">{{ $message }}</p>
+                        @enderror
+                    </div>
+
+                    <fieldset @error('format') aria-describedby="format-error" @enderror>
+                        <legend class="mb-3 block text-sm font-semibold text-navy-800">Formato</legend>
                         <div class="grid grid-cols-2 gap-3">
-                            <label class="relative flex items-center justify-center p-4 rounded-xl border-2 cursor-pointer transition-all has-[:checked]:border-navy-800 has-[:checked]:bg-navy-50 border-warm-200 hover:border-warm-300">
-                                <input type="radio" name="format" value="xlsx" {{ request('format', 'xlsx') === 'xlsx' ? 'checked' : '' }} class="sr-only peer">
-                                <div class="text-center">
-                                    <svg class="w-8 h-8 mx-auto mb-1 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
-                                    <span class="text-sm font-medium text-navy-800">Excel</span>
-                                    <span class="text-xs text-warm-500 block">.xlsx</span>
+                            <label class="report-choice cursor-pointer p-4">
+                                <input type="radio" name="format" value="xlsx" {{ request('format', 'xlsx') === 'xlsx' ? 'checked' : '' }} class="sr-only">
+                                <div class="flex flex-col items-center text-center">
+                                    <svg class="mb-2 h-8 w-8 text-green-600" aria-hidden="true" focusable="false" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+                                    <span class="text-sm font-bold text-navy-900">Hoja de cálculo</span>
+                                    <span class="mt-0.5 text-xs text-warm-600">Archivo .xlsx</span>
                                 </div>
                             </label>
-                            <label class="relative flex items-center justify-center p-4 rounded-xl border-2 cursor-pointer transition-all has-[:checked]:border-navy-800 has-[:checked]:bg-navy-50 border-warm-200 hover:border-warm-300">
-                                <input type="radio" name="format" value="pdf" {{ request('format') === 'pdf' ? 'checked' : '' }} class="sr-only peer">
-                                <div class="text-center">
-                                    <svg class="w-8 h-8 mx-auto mb-1 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"/></svg>
-                                    <span class="text-sm font-medium text-navy-800">PDF</span>
-                                    <span class="text-xs text-warm-500 block">.pdf</span>
+                            <label class="report-choice cursor-pointer p-4">
+                                <input type="radio" name="format" value="pdf" {{ request('format') === 'pdf' ? 'checked' : '' }} class="sr-only">
+                                <div class="flex flex-col items-center text-center">
+                                    <svg class="mb-2 h-8 w-8 text-red-600" aria-hidden="true" focusable="false" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"/></svg>
+                                    <span class="text-sm font-bold text-navy-900">Documento PDF</span>
+                                    <span class="mt-0.5 text-xs text-warm-600">Archivo .pdf</span>
                                 </div>
                             </label>
                         </div>
-                    </div>
+                        @error('format')
+                            <p id="format-error" class="field-error">{{ $message }}</p>
+                        @enderror
+                    </fieldset>
 
-                    <button type="submit" class="w-full bg-navy-800 text-white py-3.5 rounded-xl font-medium text-sm hover:bg-navy-700 transition-all shadow-lg shadow-navy-900/10 hover:shadow-xl active:scale-[0.98]">
-                        Descargar Reporte
+                    <button type="submit" class="primary-cta w-full px-6 py-4 text-sm">
+                        Descargar reporte
+                        <svg class="relative h-4 w-4" aria-hidden="true" focusable="false" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
                     </button>
                 </form>
 
                 <div class="mt-6 text-center">
-                    <a href="{{ url('/admin/attendances') }}" class="text-sm text-warm-500 hover:text-navy-600 transition-colors">
+                    <a href="{{ url('/admin/attendances') }}" class="text-sm font-semibold text-warm-600 transition-colors hover:text-navy-700">
                         &larr; Volver a Asistencias
                     </a>
                 </div>
-            </div>
+            </section>
         </div>
-    </div>
+    </main>
 </body>
 </html>

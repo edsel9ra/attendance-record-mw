@@ -20,17 +20,23 @@ class EventForm
             ->columns(2)
             ->components([
                 DatePicker::make('date')
+                    ->label('Fecha')
                     ->required(),
                 TextInput::make('topic')
+                    ->label('Tema')
                     ->required()
                     ->columnSpanFull(),
                 TimePicker::make('start_time')
+                    ->label('Hora de inicio')
                     ->required(),
                 TimePicker::make('end_time')
+                    ->label('Hora final')
                     ->required(),
                 TextInput::make('place')
+                    ->label('Lugar')
                     ->required(),
                 Select::make('reason')
+                    ->label('Motivo')
                     ->required()
                     ->columnSpanFull()
                     ->options(fn () => Reason::where('is_active', true)->pluck('name', 'name'))

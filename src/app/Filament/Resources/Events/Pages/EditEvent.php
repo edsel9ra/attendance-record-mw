@@ -13,7 +13,11 @@ class EditEvent extends EditRecord
     protected function getHeaderActions(): array
     {
         return [
-            DeleteAction::make(),
+            DeleteAction::make()
+                ->label('Eliminar')
+                ->modalHeading('Eliminar evento')
+                ->modalSubmitActionLabel('Eliminar')
+                ->successNotificationTitle('Evento eliminado'),
         ];
     }
 

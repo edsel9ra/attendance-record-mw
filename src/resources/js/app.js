@@ -3,24 +3,23 @@ import '../css/app.css';
 import SignaturePad from 'signature_pad';
 
 document.addEventListener('DOMContentLoaded', () => {
+    const focusTarget = document.querySelector('[data-focus-on-load="true"]');
+    if (focusTarget) {
+        requestAnimationFrame(() => focusTarget.focus());
+    }
+
     const canvas = document.getElementById('signatureCanvas');
     if (!canvas) return;
 
     const signatureInput = document.getElementById('signatureInput');
     const clearBtn = document.getElementById('clearSignature');
+    const useTypedSignatureBtn = document.getElementById('useTypedSignature');
     const form = document.getElementById('attendanceForm');
     const placeholder = document.getElementById('signaturePlaceholder');
     const statusEl = document.getElementById('signatureStatus');
-
-    function resizeCanvas() {
-        const rect = canvas.getBoundingClientRect();
-        const ratio = Math.max(window.devicePixelRatio || 1, 1);
-        canvas.width = rect.width * ratio;
-        canvas.height = rect.height * ratio;
-        const ctx = canvas.getContext('2d');
-        ctx.scale(ratio, ratio);
-        signaturePad && signaturePad.clear();
-    }
+    const fullNameInput = document.getElementById('full_name');
+    const signatureFrame = canvas.closest('.signature-frame');
+    let typedSignatureName = null;
 
     const signaturePad = new SignaturePad(canvas, {
         backgroundColor: 'rgba(0,0,0,0)',
@@ -29,51 +28,168 @@ document.addEventListener('DOMContentLoaded', () => {
         maxWidth: 2.5,
     });
 
-    function updateUI() {
-        const isEmpty = signaturePad.isEmpty();
+    function setStatus(message = '', isError = false) {
+        if (!statusEl) return;
+
+        statusEl.textContent = message;
+        statusEl.classList.toggle('text-red-600', isError);
+        statusEl.classList.toggle('text-warm-600', !isError);
+    }
+
+    function hasSignature() {
+        return Boolean(typedSignatureName) || !signaturePad.isEmpty();
+    }
+
+    function setSignatureInvalid(isInvalid) {
+        signatureFrame?.classList.toggle('is-invalid', isInvalid);
+
+        if (isInvalid) {
+            signatureFrame?.setAttribute('aria-invalid', 'true');
+            return;
+        }
+
+        signatureFrame?.removeAttribute('aria-invalid');
+    }
+
+    function updateUI(message = null, isError = false) {
+        const isEmpty = !hasSignature();
+
         if (placeholder) {
             placeholder.style.opacity = isEmpty ? '1' : '0';
         }
-        if (statusEl) {
-            statusEl.textContent = isEmpty ? '' : `Firma registrada (${signaturePad.toData().length} puntos)`;
+
+        if (clearBtn) {
+            clearBtn.disabled = isEmpty;
+            clearBtn.setAttribute('aria-disabled', String(isEmpty));
         }
-        clearBtn.disabled = isEmpty;
-    }
 
-    canvas.addEventListener('pointerdown', updateUI);
-    canvas.addEventListener('pointerup', updateUI);
-    signaturePad.addEventListener('endStroke', updateUI);
+        if (!isEmpty) {
+            setSignatureInvalid(false);
+        }
 
-    clearBtn.addEventListener('click', () => {
-        signaturePad.clear();
-        signatureInput.value = '';
-        updateUI();
-    });
-
-    form.addEventListener('submit', (e) => {
-        if (signaturePad.isEmpty()) {
-            e.preventDefault();
-            if (statusEl) {
-                statusEl.textContent = 'Debe dibujar su firma antes de enviar';
-                statusEl.classList.add('text-red-500');
-                setTimeout(() => {
-                    statusEl.classList.remove('text-red-500');
-                }, 3000);
-            }
-            canvas.parentElement.classList.add('border-red-400', 'ring-2', 'ring-red-200');
-            setTimeout(() => {
-                canvas.parentElement.classList.remove('border-red-400', 'ring-2', 'ring-red-200');
-            }, 2000);
+        if (message !== null) {
+            setStatus(message, isError);
             return;
         }
-        signatureInput.value = signaturePad.toDataURL();
-        const btn = document.getElementById('submitBtn');
-        btn.disabled = true;
-        btn.innerHTML = '<span class="inline-flex items-center gap-2"><svg class="animate-spin h-4 w-4" viewBox="0 0 24 24" fill="none"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/></svg> Registrando...</span>';
+
+        if (isEmpty) {
+            setStatus('');
+            return;
+        }
+
+        setStatus(typedSignatureName ? 'Firma generada con el nombre indicado.' : 'Firma dibujada correctamente.');
+    }
+
+    function drawTypedSignature(name, announce = true) {
+        const rect = canvas.getBoundingClientRect();
+        const ctx = canvas.getContext('2d');
+
+        ctx.clearRect(0, 0, rect.width, rect.height);
+        ctx.save();
+        ctx.fillStyle = '#0a1628';
+        ctx.strokeStyle = '#c9952f';
+        ctx.lineWidth = 1.5;
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+
+        let fontSize = 34;
+        do {
+            ctx.font = `italic ${fontSize}px Georgia, serif`;
+            fontSize -= 2;
+        } while (ctx.measureText(name).width > rect.width - 48 && fontSize > 20);
+
+        ctx.fillText(name, rect.width / 2, rect.height / 2 - 4);
+        ctx.beginPath();
+        ctx.moveTo(24, rect.height / 2 + 30);
+        ctx.lineTo(rect.width - 24, rect.height / 2 + 30);
+        ctx.stroke();
+        ctx.restore();
+
+        signatureInput.value = canvas.toDataURL('image/png');
+
+        if (announce) {
+            updateUI('Firma generada con el nombre indicado.');
+        }
+    }
+
+    function resizeCanvas() {
+        const rect = canvas.getBoundingClientRect();
+        const ratio = Math.max(window.devicePixelRatio || 1, 1);
+        canvas.width = Math.max(rect.width * ratio, 1);
+        canvas.height = Math.max(rect.height * ratio, 1);
+
+        const ctx = canvas.getContext('2d');
+        ctx.scale(ratio, ratio);
+
+        if (typedSignatureName) {
+            drawTypedSignature(typedSignatureName, false);
+            updateUI();
+            return;
+        }
+
+        signaturePad.clear();
+        updateUI();
+    }
+
+    useTypedSignatureBtn?.addEventListener('click', () => {
+        const name = fullNameInput?.value.trim();
+
+        if (!name) {
+            setStatus('Escriba su nombre completo antes de generar la firma.', true);
+            fullNameInput?.focus();
+            return;
+        }
+
+        typedSignatureName = name;
+        signaturePad.clear();
+        drawTypedSignature(name);
     });
 
-    const ro = new ResizeObserver(() => resizeCanvas());
-    ro.observe(canvas);
+    signaturePad.addEventListener('beginStroke', () => {
+        typedSignatureName = null;
+        signatureInput.value = '';
+    });
+
+    signaturePad.addEventListener('endStroke', () => {
+        updateUI('Firma dibujada correctamente.');
+    });
+
+    clearBtn?.addEventListener('click', () => {
+        typedSignatureName = null;
+        signaturePad.clear();
+        signatureInput.value = '';
+        updateUI('Firma borrada.');
+    });
+
+    form?.addEventListener('submit', (event) => {
+        if (!hasSignature()) {
+            event.preventDefault();
+            setSignatureInvalid(true);
+            updateUI('Debe registrar su firma antes de enviar.', true);
+            useTypedSignatureBtn?.focus();
+            return;
+        }
+
+        if (!typedSignatureName) {
+            signatureInput.value = signaturePad.toDataURL();
+        }
+
+        const btn = document.getElementById('submitBtn');
+        if (!btn) return;
+
+        btn.disabled = true;
+        btn.setAttribute('aria-busy', 'true');
+        btn.innerHTML = '<span class="inline-flex items-center gap-2"><svg class="animate-spin h-4 w-4" aria-hidden="true" focusable="false" viewBox="0 0 24 24" fill="none"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/></svg> Registrando...</span>';
+    });
+
+    if ('ResizeObserver' in window) {
+        const ro = new ResizeObserver(() => resizeCanvas());
+        ro.observe(canvas);
+        resizeCanvas();
+    } else {
+        window.addEventListener('resize', resizeCanvas);
+        resizeCanvas();
+    }
 
     updateUI();
 });

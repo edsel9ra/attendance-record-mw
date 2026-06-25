@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Event;
+use App\Models\Headquarter;
 use App\Services\ReportService;
 use Illuminate\Http\Request;
 
@@ -18,24 +19,29 @@ class ReportController extends Controller
             $events = Event::where('directed_by_id', auth()->id())
                 ->orderBy('date', 'desc')
                 ->get();
+            $headquarters = Headquarter::orderBy('name')->get();
 
-            return view('reports.form', compact('events'));
+            return view('reports.form', compact('events', 'headquarters'));
         }
 
         $request->validate([
             'event_id' => 'required|exists:events,id',
             'format' => 'required|in:xlsx,pdf',
+            'headquarter_id' => 'nullable|exists:headquarters,id',
         ]);
 
         $event = Event::where('id', $request->query('event_id'))
             ->where('directed_by_id', auth()->id())
             ->firstOrFail();
+        $headquarterId = $request->filled('headquarter_id')
+            ? (int) $request->query('headquarter_id')
+            : null;
 
         if ($request->query('format') === 'xlsx') {
-            return $this->reportService->exportXlsx($event);
+            return $this->reportService->exportXlsx($event, $headquarterId);
         }
 
-        return $this->reportService->exportPdf($event);
+        return $this->reportService->exportPdf($event, $headquarterId);
     }
 
     public function exportCsv(Request $request)

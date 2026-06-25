@@ -13,7 +13,11 @@ class EditPosition extends EditRecord
     protected function getHeaderActions(): array
     {
         return [
-            DeleteAction::make(),
+            DeleteAction::make()
+                ->label('Eliminar')
+                ->modalHeading('Eliminar cargo')
+                ->modalSubmitActionLabel('Eliminar')
+                ->successNotificationTitle('Cargo eliminado'),
         ];
     }
 }

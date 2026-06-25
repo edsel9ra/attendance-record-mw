@@ -17,18 +17,23 @@ class EventsTable
             ->modifyQueryUsing(fn ($query) => $query->where('directed_by_id', auth()->id()))
             ->columns([
                 TextColumn::make('date')
-                    ->date()
+                    ->label('Fecha')
+                    ->date('d/m/Y')
                     ->sortable(),
                 TextColumn::make('topic')
+                    ->label('Tema')
                     ->searchable()
                     ->limit(40),
                 TextColumn::make('start_time')
-                    ->time()
+                    ->label('Hora de inicio')
+                    ->time('H:i')
                     ->sortable(),
                 TextColumn::make('end_time')
-                    ->time()
+                    ->label('Hora final')
+                    ->time('H:i')
                     ->sortable(),
                 TextColumn::make('place')
+                    ->label('Lugar')
                     ->searchable()
                     ->limit(30),
                 TextColumn::make('attendances_count')
@@ -36,23 +41,31 @@ class EventsTable
                     ->counts('attendances')
                     ->sortable(),
                 TextColumn::make('slug')
+                    ->label('Enlace')
                     ->searchable()
                     ->limit(20)
                     ->toggleable(isToggledHiddenByDefault: true),
                 TextColumn::make('created_at')
-                    ->dateTime()
+                    ->label('Creado')
+                    ->dateTime('d/m/Y H:i')
                     ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true),
             ])
             ->filters([])
             ->recordActions([
-                ViewAction::make(),
-                EditAction::make(),
+                ViewAction::make()
+                    ->label('Ver'),
+                EditAction::make()
+                    ->label('Editar'),
             ])
             ->toolbarActions([
                 BulkActionGroup::make([
-                    DeleteBulkAction::make(),
-                ]),
+                    DeleteBulkAction::make()
+                        ->label('Eliminar seleccionados')
+                        ->modalHeading('Eliminar eventos seleccionados')
+                        ->modalSubmitActionLabel('Eliminar')
+                        ->successNotificationTitle('Eventos eliminados'),
+                ])->label('Acciones masivas'),
             ]);
     }
 }

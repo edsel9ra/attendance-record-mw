@@ -49,10 +49,11 @@ class ReportService
         ]);
     }
 
-    public function exportXlsx(Event $event): Response
+    public function exportXlsx(Event $event, ?int $headquarterId = null): Response
     {
         $attendances = $event->attendances()
             ->with(['position', 'headquarter'])
+            ->when($headquarterId, fn ($query) => $query->where('headquarter_id', $headquarterId))
             ->orderBy('registered_at')
             ->get();
 
@@ -92,10 +93,11 @@ class ReportService
         );
     }
 
-    public function exportPdf(Event $event): Response
+    public function exportPdf(Event $event, ?int $headquarterId = null): Response
     {
         $attendances = $event->attendances()
             ->with(['position', 'headquarter'])
+            ->when($headquarterId, fn ($query) => $query->where('headquarter_id', $headquarterId))
             ->orderBy('registered_at')
             ->get();
 

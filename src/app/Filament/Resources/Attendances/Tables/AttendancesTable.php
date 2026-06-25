@@ -45,7 +45,7 @@ class AttendancesTable
             ->filters([])
             ->recordActions([
                 Action::make('viewSignature')
-                    ->label('Ver')
+                    ->label('Ver detalles')
                     ->icon('heroicon-o-eye')
                     ->modalHeading('Detalles de Asistencia')
                     ->modalWidth(Width::Medium)
@@ -62,8 +62,12 @@ class AttendancesTable
                     ->url(route('reports.form'))
                     ->openUrlInNewTab(),
                 BulkActionGroup::make([
-                    DeleteBulkAction::make(),
-                ]),
+                    DeleteBulkAction::make()
+                        ->label('Eliminar seleccionados')
+                        ->modalHeading('Eliminar asistencias seleccionadas')
+                        ->modalSubmitActionLabel('Eliminar')
+                        ->successNotificationTitle('Asistencias eliminadas'),
+                ])->label('Acciones masivas'),
             ]);
     }
 }

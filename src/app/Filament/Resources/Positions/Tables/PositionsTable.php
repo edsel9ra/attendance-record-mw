@@ -16,15 +16,19 @@ class PositionsTable
         return $table
             ->columns([
                 TextColumn::make('name')
+                    ->label('Cargo')
                     ->searchable(),
                 IconColumn::make('is_active')
+                    ->label('Activo')
                     ->boolean(),
                 TextColumn::make('created_at')
-                    ->dateTime()
+                    ->label('Creado')
+                    ->dateTime('d/m/Y H:i')
                     ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true),
                 TextColumn::make('updated_at')
-                    ->dateTime()
+                    ->label('Actualizado')
+                    ->dateTime('d/m/Y H:i')
                     ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true),
             ])
@@ -32,12 +36,17 @@ class PositionsTable
                 //
             ])
             ->recordActions([
-                EditAction::make(),
+                EditAction::make()
+                    ->label('Editar'),
             ])
             ->toolbarActions([
                 BulkActionGroup::make([
-                    DeleteBulkAction::make(),
-                ]),
+                    DeleteBulkAction::make()
+                        ->label('Eliminar seleccionados')
+                        ->modalHeading('Eliminar cargos seleccionados')
+                        ->modalSubmitActionLabel('Eliminar')
+                        ->successNotificationTitle('Cargos eliminados'),
+                ])->label('Acciones masivas'),
             ]);
     }
 }

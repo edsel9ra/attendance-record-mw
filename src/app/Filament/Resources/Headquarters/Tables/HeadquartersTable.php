@@ -16,15 +16,19 @@ class HeadquartersTable
         return $table
             ->columns([
                 TextColumn::make('name')
+                    ->label('Sede')
                     ->searchable(),
                 IconColumn::make('is_active')
+                    ->label('Activo')
                     ->boolean(),
                 TextColumn::make('created_at')
-                    ->dateTime()
+                    ->label('Creado')
+                    ->dateTime('d/m/Y H:i')
                     ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true),
                 TextColumn::make('updated_at')
-                    ->dateTime()
+                    ->label('Actualizado')
+                    ->dateTime('d/m/Y H:i')
                     ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true),
             ])
@@ -32,12 +36,17 @@ class HeadquartersTable
                 //
             ])
             ->recordActions([
-                EditAction::make(),
+                EditAction::make()
+                    ->label('Editar'),
             ])
             ->toolbarActions([
                 BulkActionGroup::make([
-                    DeleteBulkAction::make(),
-                ]),
+                    DeleteBulkAction::make()
+                        ->label('Eliminar seleccionadas')
+                        ->modalHeading('Eliminar sedes seleccionadas')
+                        ->modalSubmitActionLabel('Eliminar')
+                        ->successNotificationTitle('Sedes eliminadas'),
+                ])->label('Acciones masivas'),
             ]);
     }
 }
